@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "applesauce": {
+      "source": "applesauce.build",
+      "sourceType": "well-known",
+      "computedHash": "ca295f3296a73a249fee521af0863a1d6d2e0d61165437671e6ae764a32b839e"
+    }
+  }
+}

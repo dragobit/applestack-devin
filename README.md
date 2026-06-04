@@ -32,7 +32,7 @@ pnpm run preview
 
 ## ✨ What Makes Applestack Special
 
-- **⚡ Reactive Architecture**: Built on Applesauce v5 with RxJS for real-time updates
+- **⚡ Reactive Architecture**: Built on Applesauce v6 with RxJS for real-time updates
 - **🎨 Beautiful UI**: 48+ shadcn/ui components with light/dark theme support
 - **🔐 Built-in Security**: NIP-07 browser signing, NIP-44 encryption, event validation
 - **💰 Payments Ready**: Lightning zaps (NIP-57) with built-in wallet support
@@ -46,7 +46,7 @@ pnpm run preview
 - **TailwindCSS 3.x**: Utility-first CSS framework for styling
 - **Vite**: Fast build tool and development server
 - **shadcn/ui**: 48+ unstyled, accessible UI components built with Radix UI
-- **Applesauce v5**: Production-ready Nostr SDK with reactive architecture
+- **Applesauce v6**: Production-ready Nostr SDK with reactive architecture
 - **RxJS**: Reactive programming with observables for real-time state management
 - **React Router**: Client-side routing with BrowserRouter
 - **TypeScript**: Type-safe JavaScript development
@@ -252,6 +252,6 @@ MIT License - Open source and free to use. Build amazing Nostr applications and 
 
 ---
 
-**Built with Applestack** - A production-ready Nostr client framework powered by Applesauce v5.
+**Built with Applestack** - A production-ready Nostr client framework powered by Applesauce v6.
 
 _Reactive, type-safe, and ready for production._

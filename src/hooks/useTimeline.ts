@@ -4,7 +4,6 @@ import { useEventStore } from "./useEventStore";
 import { Note } from "applesauce-common/casts";
 import { castTimelineStream } from "applesauce-common/observable";
 import { mapEventsToStore, mapEventsToTimeline } from "applesauce-core";
-import { onlyEvents } from "applesauce-relay";
 import { pool } from "@/services/nostr";
 import type { Filter } from "applesauce-core/helpers";
 
@@ -50,8 +49,7 @@ export function useTimeline(
 
   const notes = use$(
     () =>
-      pool.req(relays, filters).pipe(
-        onlyEvents(), // Filter out EOSE and other relay messages
+      pool.subscription(relays, filters).pipe(
         mapEventsToStore(store), // Add events to store and deduplicate
         mapEventsToTimeline(), // Collect events into an array
         // @ts-expect-error - Cast type compatibility with EventStore
