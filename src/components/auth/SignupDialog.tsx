@@ -1,7 +1,7 @@
 // NOTE: This file is stable and usually should not be modified.
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Download, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,20 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose }) => {
   });
   const login = useLoginActions();
   const { publishEvent, isPending: isPublishing } = usePublish();
+
+  // Reset state when the dialog transitions to open. Using the
+  // "adjust state during render on prop change" pattern instead of an
+  // effect avoids the cascading-render setState-in-effect anti-pattern.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    if (isOpen) {
+      setStep("generate");
+      setNsec("");
+      setShowKey(false);
+      setProfileData({ name: "", about: "", picture: "" });
+    }
+  }
 
   // Generate a proper nsec key using nostr-tools
   const generateKey = () => {
@@ -120,16 +134,6 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose }) => {
     if (step === "download") return "Secret Key";
     if (step === "profile") return "Create Your Profile";
   };
-
-  // Reset state when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      setStep("generate");
-      setNsec("");
-      setShowKey(false);
-      setProfileData({ name: "", about: "", picture: "" });
-    }
-  }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

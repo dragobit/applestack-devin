@@ -1,36 +1,34 @@
 import path from "node:path";
 
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vitest/config";
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
-  build: {
-    sourcemap: true,
-    target: ["es2022"],
-  },
-  esbuild: {
-    target: ["es2022"],
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      target: "es2022",
-    },
-  },
   server: {
     host: "::",
     port: 8080,
   },
-  plugins: [react()],
+  plugins: [
+    react(),
+    tailwindcss(),
+  ],
   test: {
     globals: true,
-    environment: "jsdom",
-    setupFiles: "./src/test/setup.ts",
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/{vite,eslint}.config.*',
+      '.agents/**',
+    ],
     onConsoleLog(log) {
       return !log.includes("React Router Future Flag Warning");
     },
     env: {
-      DEBUG_PRINT_LIMIT: "0", // Suppress DOM output that exceeds AI context windows
+      DEBUG_PRINT_LIMIT: '0', // Suppress DOM output that exceeds AI context windows
     },
   },
   resolve: {

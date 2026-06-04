@@ -48,19 +48,25 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const login = useLoginActions();
 
-  // Reset all state when dialog opens/closes
-  useEffect(() => {
+  // Reset all state when the dialog transitions to open. Using the
+  // "adjust state during render on prop change" pattern instead of an
+  // effect avoids the cascading-render setState-in-effect anti-pattern.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen) {
-      // Reset state when dialog opens
       setIsLoading(false);
       setIsFileLoading(false);
       setNsec("");
       setBunkerUri("");
       setErrors({});
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+    }
+  }
+
+  // Clear the uncontrolled file input element (DOM side-effect only).
+  useEffect(() => {
+    if (isOpen && fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   }, [isOpen]);
 

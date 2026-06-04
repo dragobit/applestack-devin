@@ -1,35 +1,35 @@
+// @ts-check
 import js from "@eslint/js";
+import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 import htmlEslint from "@html-eslint/eslint-plugin";
-import htmlParser from "@html-eslint/parser";
 import customRules from "./eslint-rules/index.js";
 
-export default tseslint.config(
-  { ignores: ["dist", "node_modules", ".agents"] },
+export default defineConfig(
+  globalIgnores(["dist", ".agents"]),
   {
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    name: "app/ts",
     files: ["**/*.{ts,tsx}"],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
     },
     linterOptions: {
-      reportUnusedDisableDirectives: "error", // Reports unused disable directives as errors
+      reportUnusedDisableDirectives: "error",
     },
     plugins: {
-      "react-hooks": reactHooks,
-      "react-refresh": reactRefresh,
       custom: customRules,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
@@ -43,23 +43,23 @@ export default tseslint.config(
     },
   },
   {
+    name: "app/html",
     files: ["**/*.html"],
+    extends: [htmlEslint.configs["flat/recommended"]],
     plugins: {
-      "@html-eslint": htmlEslint,
       custom: customRules,
     },
-    languageOptions: {
-      parser: htmlParser,
-    },
     rules: {
-      "@html-eslint/require-title": "error",
-      "@html-eslint/require-meta-charset": "error",
       "@html-eslint/require-meta-description": "error",
       "@html-eslint/require-meta-viewport": "error",
       "@html-eslint/require-open-graph-protocol": [
         "error",
         ["og:type", "og:title", "og:description"],
       ],
+      // The manifest link below intentionally uses `rel="manifest"`; the
+      // baseline data currently flags this attribute value as not widely
+      // available, which is a false positive for our use case.
+      "@html-eslint/use-baseline": "off",
       "custom/no-inline-script": "error",
       "custom/require-webmanifest": "error",
     },

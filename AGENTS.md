@@ -30,12 +30,12 @@
 - Vitest is configured in `vite.config.ts` with `jsdom`, globals, `src/test/setup.ts`, and suppressed React Router future-flag console noise.
 - `src/test/setup.ts` mocks `matchMedia`, `scrollTo`, `IntersectionObserver`, and `ResizeObserver`; do not duplicate these mocks in each test unless a test needs custom behavior.
 - ESLint has custom repo rules: no placeholder comments matching the local rule, no `fixme` warning comments, no unused disable directives, and no inline scripts in HTML.
-- TypeScript is not fully strict (`strict: false`, `noImplicitAny: false`), but `strictNullChecks` is enabled and ESLint enforces unused vars unless prefixed with `_`.
+- TypeScript runs in `strict` mode (`tsconfig.json`); ESLint (flat config, eslint 10 + `eslint-plugin-react-hooks` v7) enforces unused vars unless prefixed with `_`, forbids `setState` in effects, and requires `cause` on rethrown errors. Never use the `any` type.
 
 ## UI And Styling
 
 - shadcn/ui is configured through `components.json` with CSS variables, Slate base color, aliases under `@/components`, `@/components/ui`, `@/lib`, and `@/hooks`.
-- Tailwind dark mode is class-based; theme tokens live in CSS variables consumed by `tailwind.config.ts`.
+- Tailwind v4 is configured via the `@tailwindcss/vite` plugin (no `tailwind.config.ts`/`postcss.config.js`); theme tokens are declared as CSS variables in `src/index.css` under `@theme inline`, with class-based dark mode via the `dark` custom variant.
 - Use `cn()` from `@/lib/utils` when combining Tailwind classes.
 
 ## CI And Deploy

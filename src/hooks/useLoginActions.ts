@@ -40,7 +40,7 @@ export function useLoginActions() {
         accounts.setActive(account.pubkey);
       } catch (error) {
         console.error("Failed to login with nsec:", error);
-        throw new Error("Invalid secret key");
+        throw new Error("Invalid secret key", { cause: error });
       }
     },
 
@@ -79,7 +79,7 @@ export function useLoginActions() {
         accounts.setActive(account.pubkey);
       } catch (error) {
         console.error("Failed to login with bunker:", error);
-        throw new Error("Failed to connect to remote signer");
+        throw new Error("Failed to connect to remote signer", { cause: error });
       }
     },
 

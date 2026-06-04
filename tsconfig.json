@@ -15,14 +15,12 @@
     "jsx": "react-jsx",
 
     /* Linting */
-    "strict": false,
-    "strictNullChecks": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noImplicitAny": false,
-    "noFallthroughCasesInSwitch": false,
+    "strict": true,
 
-    "baseUrl": ".",
+    /* Incremental compilation for faster re-runs of `tsc --noEmit` */
+    "incremental": true,
+    "tsBuildInfoFile": "./.tsbuildinfo",
+
     "paths": {
       "@/*": ["./src/*"]
     }

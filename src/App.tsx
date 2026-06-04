@@ -2,7 +2,7 @@
 // To add new routes, edit the AppRouter.tsx file.
 
 import { createHead, UnheadProvider } from "@unhead/react/client";
-import { InferSeoMetaPlugin } from "@unhead/addons";
+import { InferSeoMetaPlugin } from "unhead/plugins";
 import { Suspense } from "react";
 import {
   EventStoreProvider,
