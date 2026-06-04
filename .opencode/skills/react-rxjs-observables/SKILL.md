@@ -97,26 +97,60 @@ function ThemeDisplay() {
 
 ### Pattern 3: Nested Cast Properties
 
-Applesauce casts expose properties as observables:
+Applesauce casts expose properties as **chainable observables** - observables that can be directly subscribed to without wrapping in a factory:
 
 ```tsx
 import { use$ } from "@/hooks/use$";
 import { Note } from "applesauce-common/casts";
 
 function NoteCard({ note }: { note: Note }) {
-  // Subscribe to nested observables
-  const author = use$(note.author.profile$);
+  // Subscribe to chainable observables directly (no factory needed)
+  const profile = use$(note.author.profile$);
   const reactions = use$(note.reactions$);
-  const replyCount = use$(note.replies?.count$);
+  const zaps = use$(note.zaps$);
 
   return (
     <div>
-      <span>{author?.name ?? "Anonymous"}</span>
+      <h3>{profile?.displayName ?? profile?.name ?? "Anonymous"}</h3>
       <p>{note.content}</p>
       <span>{reactions?.length ?? 0} reactions</span>
-      <span>{replyCount ?? 0} replies</span>
+      <span>{zaps?.length ?? 0} zaps</span>
     </div>
   );
+}
+```
+
+**Key Point:** Cast properties ending with `$` are chainable observables that update automatically when related events change.
+
+### Pattern 4: Side Effects and Loaders
+
+Use `use$` to trigger side effects like loading missing events:
+
+```tsx
+import { use$ } from "@/hooks/use$";
+import { pool } from "@/services/pool";
+import { onlyEvents, mapEventsToStore } from "applesauce-relay";
+
+function ArticleComments({ article }: { article: Article }) {
+  // Subscribe to comments for side effects (loading them into store)
+  use$(() => {
+    if (!article) return;
+    return pool
+      .relay("wss://relay.damus.io")
+      .subscription({
+        kinds: [1111],
+        "#a": [`30023:${article.author.pubkey}:${article.identifier}`],
+      })
+      .pipe(onlyEvents(), mapEventsToStore(eventStore));
+  }, [article?.id]);
+
+  // Then query comments from the store
+  const comments = use$(
+    () => eventStore.model(CommentsModel, article.event),
+    [article.id],
+  );
+
+  return <CommentsList comments={comments} />;
 }
 ```
 
@@ -298,6 +332,102 @@ const stableKey = useMemo(
 const data = use$(() => fetchData(complexConfig), [stableKey]);
 ```
 
+### Clone Arrays for Timeline Updates
+
+**CRITICAL:** EventStore timelines return the same array reference. Clone the array to trigger React updates:
+
+```tsx
+import { map } from "rxjs";
+
+// ✅ Good - clone array to trigger React updates
+const notes = use$(
+  () =>
+    eventStore.timeline({ kinds: [1] }).pipe(map((timeline) => [...timeline])),
+  [],
+);
+
+// ❌ Bad - React may not detect updates (same reference)
+const notes = use$(() => eventStore.timeline({ kinds: [1] }), []);
+```
+
+### Avoid Creating Observables in Render
+
+Don't create new observables during render - use the factory pattern:
+
+```tsx
+// ❌ Bad - creates new observable every render
+function Profile({ pubkey }) {
+  const profile = use$(eventStore.profile(pubkey));
+  return <div>{profile?.name}</div>;
+}
+
+// ✅ Good - factory creates observable once, recreates on pubkey change
+function Profile({ pubkey }) {
+  const profile = use$(() => eventStore.profile(pubkey), [pubkey]);
+  return <div>{profile?.name}</div>;
+}
+```
+
+### Memoize Loaders
+
+Always memoize timeline loaders to prevent recreation:
+
+```tsx
+import { useMemo, useEffect } from "react";
+import { createTimelineLoader } from "applesauce-loaders/loaders";
+
+function Timeline({ relays }) {
+  const loader = useMemo(
+    () =>
+      createTimelineLoader(pool, {
+        relays,
+        filters: [{ kinds: [1], limit: 50 }],
+      }),
+    [relays.join(",")],
+  );
+
+  useEffect(() => {
+    const sub = loader.timeline$.subscribe();
+    return () => sub.unsubscribe();
+  }, [loader]);
+
+  const events = use$(
+    () =>
+      eventStore
+        .timeline({ kinds: [1] })
+        .pipe(map((timeline) => [...timeline])),
+    [],
+  );
+
+  return <div>{events?.map(renderEvent)}</div>;
+}
+```
+
+### Debounce High-Frequency Updates
+
+Use RxJS operators to control update frequency:
+
+```tsx
+import { debounceTime } from "rxjs";
+
+function LiveFeed({ relay }) {
+  const events = use$(
+    () =>
+      pool
+        .relay(relay)
+        .subscription({ kinds: [1] })
+        .pipe(
+          onlyEvents(),
+          debounceTime(500), // Update UI every 500ms max
+          mapEventsToTimeline(),
+        ),
+    [relay],
+  );
+
+  return <div>{events?.length || 0} events</div>;
+}
+```
+
 ## Error Handling
 
 Errors from observables are thrown and caught by React Error Boundaries:
@@ -314,16 +444,207 @@ function App() {
 }
 ```
 
+## Additional Best Practices
+
+### Conditional Subscriptions
+
+Return `undefined` or `EMPTY` to skip subscriptions when conditions aren't met:
+
+```tsx
+import { EMPTY } from "rxjs";
+
+function Timeline({ relay, isLive }) {
+  const events = use$(
+    () => (isLive ? pool.relay(relay).subscription({ kinds: [1] }) : EMPTY),
+    [relay, isLive],
+  );
+
+  return <div>{events?.length || 0} events</div>;
+}
+```
+
+### Handle Undefined vs Null
+
+Remember that `use$` returns `undefined` until the observable emits:
+
+```tsx
+function Profile({ pubkey }: { pubkey: string }) {
+  const profile = use$(() => eventStore.profile(pubkey), [pubkey]);
+
+  // undefined = still loading
+  if (profile === undefined) {
+    return <Skeleton />;
+  }
+
+  // null or no profile data = not found
+  if (!profile) {
+    return <div>Profile not found</div>;
+  }
+
+  return <div>{profile.displayName}</div>;
+}
+```
+
+### Use BehaviorSubject for Always-Available Values
+
+For values that should always be available (like current user), use `BehaviorSubject`:
+
+```tsx
+import { BehaviorSubject } from "rxjs";
+
+// BehaviorSubject always has a value
+const user$ = new BehaviorSubject<User | null>(null);
+const user = use$(user$); // user is User | null, never undefined
+
+// Regular Observable might not have emitted yet
+const user$ = new Subject<User>();
+const user = use$(user$); // user is User | undefined
+```
+
 ## Quick Reference
 
 | Pattern             | When to Use                                   | Example                                       |
 | ------------------- | --------------------------------------------- | --------------------------------------------- |
 | Factory function    | Observable depends on props/state             | `use$(() => store.model(Model, id), [id])`    |
 | Direct observable   | Global observable, no dependencies            | `use$(globalObservable$)`                     |
-| Nested properties   | Cast properties like `profile$`, `reactions$` | `use$(note.author.profile$)`                  |
+| Chainable props     | Cast properties like `profile$`, `reactions$` | `use$(note.author.profile$)`                  |
 | Side effects        | Relay subscriptions, loaders                  | `use$(() => pool.subscription(...), [deps])`  |
 | Chained observables | Combining multiple sources                    | `use$(() => combineLatest([...]), [deps])`    |
 | Conditional         | Optional observable                           | `use$(() => cond ? obs$ : undefined, [cond])` |
+
+## Working with EventStore and RelayPool
+
+### EventStore Methods
+
+Common EventStore methods that work with `use$`:
+
+```tsx
+import { use$ } from "@/hooks/use$";
+import { useEventStore } from "@/hooks/useEventStore";
+import { ProfileModel, CommentsModel, ZapsModel } from "applesauce-core/models";
+
+function Examples({ pubkey, eventId, filters }) {
+  const store = useEventStore();
+
+  // Get a single event by ID
+  const event = use$(() => store.event(eventId), [eventId, store]);
+
+  // Get a user profile
+  const profile = use$(
+    () => store.model(ProfileModel, pubkey),
+    [pubkey, store],
+  );
+
+  // Get comments for an event
+  const comments = use$(
+    () => store.model(CommentsModel, event),
+    [event?.id, store],
+  );
+
+  // Get a timeline of events
+  const timeline = use$(
+    () => store.timeline(filters).pipe(map((t) => [...t])),
+    [JSON.stringify(filters), store],
+  );
+
+  return <div>...</div>;
+}
+```
+
+### RelayPool Subscriptions
+
+Subscribe to relay subscriptions with `use$`:
+
+```tsx
+import { use$ } from "@/hooks/use$";
+import { pool } from "@/services/pool";
+import {
+  onlyEvents,
+  mapEventsToStore,
+  mapEventsToTimeline,
+} from "applesauce-relay";
+import { castTimelineStream } from "applesauce-common/observable";
+import { Note } from "applesauce-common/casts";
+
+function LiveTimeline({ relay }) {
+  const notes = use$(
+    () =>
+      pool
+        .relay(relay)
+        .subscription({ kinds: [1], limit: 50 })
+        .pipe(
+          onlyEvents(), // Filter out EOSE messages
+          mapEventsToStore(eventStore), // Add to store
+          mapEventsToTimeline(), // Sort into array
+          castTimelineStream(Note, eventStore), // Cast to Note objects
+        ),
+    [relay],
+  );
+
+  return (
+    <div>
+      {notes?.map((note) => (
+        <NoteCard key={note.id} note={note} />
+      ))}
+    </div>
+  );
+}
+```
+
+### Casting Observables
+
+Use `castEventStream` and `castTimelineStream` to cast events within RxJS pipelines:
+
+```tsx
+import {
+  castEventStream,
+  castTimelineStream,
+} from "applesauce-common/observable";
+import { Note, Article } from "applesauce-common/casts";
+
+function Examples({ eventId, filters }) {
+  const store = useEventStore();
+
+  // Cast a single event observable
+  const note = use$(
+    () => store.event(eventId).pipe(castEventStream(Note, store)),
+    [eventId, store],
+  );
+
+  // Cast a timeline observable
+  const articles = use$(
+    () =>
+      store.timeline(filters).pipe(
+        castTimelineStream(Article, store),
+        map((timeline) => [...timeline]), // Clone for React updates
+      ),
+    [JSON.stringify(filters), store],
+  );
+
+  return <div>...</div>;
+}
+```
+
+### Relay Information
+
+Get relay metadata:
+
+```tsx
+import { use$ } from "@/hooks/use$";
+import { pool } from "@/services/pool";
+
+function RelayInfo({ relay }: { relay: string }) {
+  const info = use$(() => pool.relay(relay).information$, [relay]);
+
+  return (
+    <div>
+      <h3>{info?.name || relay}</h3>
+      <img src={info?.icon} alt={relay} />
+      <p>{info?.description}</p>
+    </div>
+  );
+}
+```
 
 ## Remember
 
@@ -331,5 +652,7 @@ function App() {
 2. **Always** include all used variables in the dependency array
 3. **Always** serialize arrays and objects in dependencies (`.join()`, `JSON.stringify()`)
 4. **Always** handle `undefined` return values (except for BehaviorSubjects)
-5. **Never** call `use$` conditionally
-6. **Never** pass array/object references directly in dependencies
+5. **Always** clone timeline arrays with `map(t => [...t])` to trigger React updates
+6. **Never** call `use$` conditionally
+7. **Never** pass array/object references directly in dependencies
+8. **Never** create observables in render - use factory pattern instead
