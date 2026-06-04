@@ -2,12 +2,12 @@
 
 ## Commands
 
-- Use `pnpm`; CI uses Node `24.x` with pnpm cache.
-- `pnpm dev` runs `pnpm i --silent && vite`; Vite serves on port `8080` (`host: "::"`).
-- `pnpm build` installs deps, runs `vite build -l error`, then copies `dist/index.html` to `dist/404.html` for SPA/GitHub Pages routing.
-- `pnpm test` is the full local/CI gate: install, `tsc --noEmit`, `eslint`, `vitest run --reporter=dot --silent`, production build, and `dist/404.html` copy.
-- Focused checks: `pnpm exec tsc --noEmit`, `pnpm exec eslint .`, `pnpm exec vitest run`, `pnpm exec vitest run src/path/file.test.tsx`.
-- `pnpm format` runs Prettier across the repo.
+- Use `npm`; CI uses Node `24.x` with npm cache.
+- `npm run dev` runs `vite`; Vite serves on port `8080` (`host: "::"`).
+- `npm run build` runs `vite build -l error`, then copies `dist/index.html` to `dist/404.html` for SPA/GitHub Pages routing.
+- `npm test` is the full local/CI gate after install: `tsc --noEmit`, `eslint`, `vitest run --reporter=dot --silent`, production build, and `dist/404.html` copy.
+- Focused checks: `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`, `npx vitest run src/path/file.test.tsx`.
+- `npm run format` runs Prettier across the repo.
 
 ## App Wiring
 
@@ -40,5 +40,5 @@
 
 ## CI And Deploy
 
-- Test workflow runs on pushes/PRs to `master` and only executes `pnpm test` after install.
+- Test workflow runs on pushes/PRs to `master` and only executes `npm test` after install.
 - GitHub Pages deploy workflow runs on pushes to `main` and manually; it builds `dist` and uploads it as the Pages artifact.
