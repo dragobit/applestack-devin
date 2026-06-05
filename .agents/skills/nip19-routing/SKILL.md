@@ -39,62 +39,108 @@ Use this skill when the user wants to populate the `NIP19Page` sections with rea
 
 ## Decoding and Filtering
 
-Nostr relay filters only accept hex strings. Always decode the NIP-19 identifier before building a filter.
+Nostr relay filters only accept hex strings. Always decode the NIP-19 identifier **before** building a filter, and turn the decoded payload — never the raw bech32 string — into the filter.
 
 ```ts
 import { nip19 } from 'nostr-tools';
+import type { Filter } from 'applesauce-core/helpers';
 
-const decoded = nip19.decode(value); // throws on invalid input
+/** Build a secure relay filter from a NIP-19 identifier. */
+function filtersFor(value: string): Filter[] {
+  const decoded = nip19.decode(value); // throws on invalid input
 
-switch (decoded.type) {
-  case 'npub': {
-    const pubkey = decoded.data; // hex string
-    return nostr.query([{ kinds: [0], authors: [pubkey], limit: 1 }]);
+  switch (decoded.type) {
+    case 'npub':
+      return [{ kinds: [0], authors: [decoded.data], limit: 1 }];
+
+    case 'nprofile':
+      return [{ kinds: [0], authors: [decoded.data.pubkey], limit: 1 }];
+
+    case 'note':
+      return [{ ids: [decoded.data], kinds: [1], limit: 1 }];
+
+    case 'nevent':
+      return [{ ids: [decoded.data.id], limit: 1 }];
+
+    case 'naddr': {
+      const { kind, pubkey, identifier } = decoded.data;
+      return [{
+        kinds: [kind],
+        authors: [pubkey],        // critical: prevents d-tag spoofing
+        '#d': [identifier],
+        limit: 1,
+      }];
+    }
+
+    default:
+      // nsec, nrelay, unknown → 404
+      throw new Error('Unsupported Nostr identifier');
   }
-
-  case 'nprofile': {
-    const { pubkey /*, relays */ } = decoded.data;
-    return nostr.query([{ kinds: [0], authors: [pubkey], limit: 1 }]);
-  }
-
-  case 'note': {
-    const id = decoded.data;
-    return nostr.query([{ ids: [id], kinds: [1], limit: 1 }]);
-  }
-
-  case 'nevent': {
-    const { id /*, relays, author, kind */ } = decoded.data;
-    return nostr.query([{ ids: [id], limit: 1 }]);
-  }
-
-  case 'naddr': {
-    const { kind, pubkey, identifier } = decoded.data;
-    return nostr.query([{
-      kinds: [kind],
-      authors: [pubkey],        // critical: prevents d-tag spoofing
-      '#d': [identifier],
-      limit: 1,
-    }]);
-  }
-
-  default:
-    // nsec, nrelay, unknown → 404
-    throw new Error('Unsupported Nostr identifier');
 }
+```
+
+### Reading the events (the applesauce way)
+
+This template reads through the global `EventStore`, not one-off relay queries. Build the filter, render **reactively** from the store, and let the configured loaders (`@/services/nostr`) fetch anything missing in the background. Loaders are cold observables — you must `.subscribe()` to fire them.
+
+For replaceable/addressable events (kind 0 profiles, `naddr`), use the store accessors plus a loader:
+
+```tsx
+import { useEffect } from 'react';
+import { use$ } from '@/hooks/use$';
+import { eventStore, addressLoader } from '@/services/nostr';
+
+function Profile({ pubkey }: { pubkey: string }) {
+  // Reactive read from the store
+  const profile = use$(() => eventStore.profile(pubkey), [pubkey]);
+
+  // Fire the loader once to fetch it if it isn't cached yet
+  useEffect(() => {
+    const sub = addressLoader({ kind: 0, pubkey }).subscribe();
+    return () => sub.unsubscribe();
+  }, [pubkey]);
+
+  if (!profile) return null; // loading / not found
+  return <ProfileHeader profile={profile} />;
+}
+```
+
+For single events by id (`note`, `nevent`), read with `eventStore.event(...)` and fetch with `eventLoader`, passing along any relay/author hints the pointer carried:
+
+```tsx
+import { eventStore, eventLoader } from '@/services/nostr';
+
+const event = use$(() => eventStore.event(id), [id]);
+useEffect(() => {
+  const sub = eventLoader({ id, relays, author }).subscribe();
+  return () => sub.unsubscribe();
+}, [id]);
+```
+
+For feeds/timelines, render from `eventStore.timeline(filtersFor(value))` (see the `nostr-infinite-scroll` skill). When you genuinely need an imperative one-shot fetch (no reactive UI), use the pool directly:
+
+```ts
+import { pool } from '@/services/nostr';
+import { extraRelays } from '@/services/settings';
+import { lastValueFrom, toArray } from 'rxjs';
+
+const events = await lastValueFrom(
+  pool.request(extraRelays.getValue(), filtersFor(value)).pipe(toArray()),
+);
 ```
 
 ### Common mistakes
 
 ```ts
-// ❌ Passing bech32 into a filter
-nostr.query([{ ids: [naddr] }]);
+// ❌ Passing bech32 straight into a filter
+{ ids: [naddr] }
 
 // ❌ Addressable lookup without the author — anyone can spoof the d-tag
-nostr.query([{ kinds: [30023], '#d': [slug] }]);
+{ kinds: [30023], '#d': [slug] }
 
-// ✅ Decode first, then include author
+// ✅ Decode first, then include the author in the filter
 const { kind, pubkey, identifier } = nip19.decode(naddr).data;
-nostr.query([{ kinds: [kind], authors: [pubkey], '#d': [identifier] }]);
+{ kinds: [kind], authors: [pubkey], '#d': [identifier] }
 ```
 
 ## Populating `NIP19Page`

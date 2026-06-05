@@ -98,12 +98,14 @@ Even with perfect XSS defenses, an attacker can publish forged events your UI wi
 
 **Do NOT filter by `authors`** for public UGC (kind 1 notes, reactions, zaps, discovery feeds) — anyone can post there by design.
 
+The trust boundary is the **filter** — specifically the `authors` constraint — regardless of how you read it (reactive `eventStore.timeline(...)` / `eventStore.replaceable(...)`, a loader, or a one-shot `pool.request(relays, ...)`):
+
 ```ts
 // ❌ Anyone can publish kind 30078 with this d-tag and self-appoint
-nostr.query([{ kinds: [30078], '#d': ['pathos-organizers'], limit: 1 }]);
+{ kinds: [30078], '#d': ['pathos-organizers'], limit: 1 }
 
-// ✅ Only trust the admin list
-nostr.query([{ kinds: [30078], authors: ADMIN_PUBKEYS, '#d': ['pathos-organizers'], limit: 1 }]);
+// ✅ Only trust the admin list — constrain `authors`
+{ kinds: [30078], authors: ADMIN_PUBKEYS, '#d': ['pathos-organizers'], limit: 1 }
 ```
 
 **Routes for addressable/replaceable events must include the author** — otherwise the route handler can't construct a secure filter:
@@ -120,10 +122,18 @@ nostr.query([{ kinds: [30078], authors: ADMIN_PUBKEYS, '#d': ['pathos-organizers
 Kind 4550 approvals are only trustworthy if signed by a moderator from the community definition (kind 34550). Two-step query:
 
 ```ts
+import { pool } from '@/services/nostr';
+import { extraRelays } from '@/services/settings';
+import { lastValueFrom, toArray } from 'rxjs';
+
+const relays = extraRelays.getValue();
+
 // 1. Fetch community definition — author-filter by the owner.
-const [community] = await nostr.query([{
-  kinds: [34550], authors: [communityOwnerPubkey], '#d': [communityId], limit: 1,
-}]);
+const [community] = await lastValueFrom(
+  pool.request(relays, [{
+    kinds: [34550], authors: [communityOwnerPubkey], '#d': [communityId], limit: 1,
+  }]).pipe(toArray()),
+);
 if (!community) return [];
 
 // 2. Extract moderator pubkeys from `p` tags with role "moderator".
@@ -132,12 +142,14 @@ const moderators = community.tags
   .map(([, pubkey]) => pubkey);
 
 // 3. Query approvals — only from moderators.
-const approvals = await nostr.query([{
-  kinds: [4550],
-  authors: moderators,
-  '#a': [`34550:${communityOwnerPubkey}:${communityId}`],
-  limit: 100,
-}]);
+const approvals = await lastValueFrom(
+  pool.request(relays, [{
+    kinds: [4550],
+    authors: moderators,
+    '#a': [`34550:${communityOwnerPubkey}:${communityId}`],
+    limit: 100,
+  }]).pipe(toArray()),
+);
 ```
 
 Without step 3's `authors` filter, anyone can publish a kind 4550 "approval".
