@@ -63,6 +63,20 @@ export const extraRelays = new BehaviorSubject<string[]>(
 persist(extraRelays, "extraRelays");
 
 /**
+ * UI theme preference. "system" follows the OS `prefers-color-scheme`.
+ * Consumed by the effect in `src/App.tsx` that toggles the `dark` class on
+ * `document.documentElement`.
+ */
+export type Theme = "light" | "dark" | "system";
+
+export const theme = new BehaviorSubject<Theme>("system");
+
+persist(theme, "theme", {
+  serialize: (v) => v,
+  deserialize: (v) => (v === "light" || v === "dark" ? v : "system"),
+});
+
+/**
  * Lookup relays for finding user relay hints (NIP-65, profile relays, etc.)
  * These are used by the event loaders to find events more efficiently.
  */

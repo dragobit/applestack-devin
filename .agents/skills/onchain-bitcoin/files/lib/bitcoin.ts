@@ -1,15 +1,15 @@
-import * as bitcoin from 'bitcoinjs-lib';
-import { toXOnly } from 'bitcoinjs-lib';
-import { nip19 } from 'nostr-tools';
-import * as ecc from '@bitcoinerlab/secp256k1';
-import { ECPairFactory, type ECPairAPI } from 'ecpair';
+import * as bitcoin from "bitcoinjs-lib";
+import { toXOnly } from "bitcoinjs-lib";
+import { nip19 } from "nostr-tools";
+import * as ecc from "@bitcoinerlab/secp256k1";
+import { ECPairFactory, type ECPairAPI } from "ecpair";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 /** Base URL for the mempool.space Esplora-compatible REST API. */
-const MEMPOOL_API = 'https://mempool.space/api';
+const MEMPOOL_API = "https://mempool.space/api";
 
 /** Standard Bitcoin dust limit in satoshis. */
 const DUST_LIMIT = 546;
@@ -42,7 +42,7 @@ function getECPair(): ECPairAPI {
  * lowercase-or-uppercase hex characters.
  */
 function isValidPubkeyHex(hex: string): boolean {
-  return typeof hex === 'string' && /^[0-9a-fA-F]{64}$/.test(hex);
+  return typeof hex === "string" && /^[0-9a-fA-F]{64}$/.test(hex);
 }
 
 /**
@@ -56,20 +56,20 @@ function isValidPubkeyHex(hex: string): boolean {
  * on the secp256k1 curve.
  */
 export function nostrPubkeyToBitcoinAddress(pubkeyHex: string): string {
-  if (!isValidPubkeyHex(pubkeyHex)) return '';
+  if (!isValidPubkeyHex(pubkeyHex)) return "";
 
   try {
-    const pubkeyBuffer = Buffer.from(pubkeyHex, 'hex');
+    const pubkeyBuffer = Buffer.from(pubkeyHex, "hex");
 
     const { address } = bitcoin.payments.p2tr({
       internalPubkey: pubkeyBuffer,
       network: bitcoin.networks.bitcoin,
     });
 
-    return address || '';
+    return address || "";
   } catch (error) {
-    console.error('Error generating Bitcoin address:', error);
-    return '';
+    console.error("Error generating Bitcoin address:", error);
+    return "";
   }
 }
 
@@ -79,8 +79,8 @@ export function nostrPubkeyToBitcoinAddress(pubkeyHex: string): string {
  */
 export function npubToBitcoinAddress(npub: string): string {
   const decoded = nip19.decode(npub);
-  if (decoded.type !== 'npub') {
-    throw new Error('Invalid npub format');
+  if (decoded.type !== "npub") {
+    throw new Error("Invalid npub format");
   }
   return nostrPubkeyToBitcoinAddress(decoded.data);
 }
@@ -115,13 +115,15 @@ export async function fetchAddressData(address: string): Promise<AddressData> {
   const response = await fetch(`${MEMPOOL_API}/address/${address}`);
 
   if (!response.ok) {
-    throw new Error('Failed to fetch balance');
+    throw new Error("Failed to fetch balance");
   }
 
   const data = await response.json();
 
-  const confirmedBalance = data.chain_stats.funded_txo_sum - data.chain_stats.spent_txo_sum;
-  const pendingBalance = data.mempool_stats.funded_txo_sum - data.mempool_stats.spent_txo_sum;
+  const confirmedBalance =
+    data.chain_stats.funded_txo_sum - data.chain_stats.spent_txo_sum;
+  const pendingBalance =
+    data.mempool_stats.funded_txo_sum - data.mempool_stats.spent_txo_sum;
 
   return {
     balance: confirmedBalance,
@@ -148,7 +150,7 @@ export function satsToBTC(sats: number): string {
  * E.g. `formatBTC(100_000_000)` → `"1"`, `formatBTC(1_234_560)` → `"0.0123456"`.
  */
 export function formatBTC(sats: number): string {
-  return satsToBTC(sats).replace(/\.?0+$/, '');
+  return satsToBTC(sats).replace(/\.?0+$/, "");
 }
 
 /** Format a satoshi amount with locale-aware thousand separators. */
@@ -159,11 +161,11 @@ export function formatSats(sats: number): string {
 /** Fetch the current BTC price in USD from the CoinGecko API. */
 export async function fetchBtcPrice(): Promise<number> {
   const response = await fetch(
-    'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
+    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
   );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch BTC price');
+    throw new Error("Failed to fetch BTC price");
   }
 
   const data = await response.json();
@@ -187,7 +189,10 @@ export const LARGE_AMOUNT_USD_THRESHOLD = 100;
  * current BTC/USD price. Returns false when `btcPrice` is unavailable, so the
  * UI does not arm confirmation without a known USD value.
  */
-export function isLargeAmount(sats: number, btcPrice: number | undefined): boolean {
+export function isLargeAmount(
+  sats: number,
+  btcPrice: number | undefined,
+): boolean {
   if (!btcPrice || !Number.isFinite(btcPrice) || btcPrice <= 0) return false;
   if (!Number.isFinite(sats) || sats <= 0) return false;
   const usd = (sats / 100_000_000) * btcPrice;
@@ -197,9 +202,9 @@ export function isLargeAmount(sats: number, btcPrice: number | undefined): boole
 /** Convert satoshis to USD given a BTC price. */
 export function satsToUSD(sats: number, btcPrice: number): string {
   const btc = sats / 100_000_000;
-  return (btc * btcPrice).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return (btc * btcPrice).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -216,7 +221,7 @@ export interface Transaction {
   /** Net satoshi change for the address (always positive — see `type`). */
   amount: number;
   /** Whether this is a receive or send relative to the address. */
-  type: 'receive' | 'send';
+  type: "receive" | "send";
   /** Whether the transaction is confirmed. */
   confirmed: boolean;
   /** Unix timestamp of the block (undefined if unconfirmed). */
@@ -227,18 +232,25 @@ export interface Transaction {
  * Fetch transactions for a Bitcoin address from the mempool.space Esplora API.
  * Returns simplified transactions with net amount relative to the address.
  */
-export async function fetchTransactions(address: string): Promise<Transaction[]> {
+export async function fetchTransactions(
+  address: string,
+): Promise<Transaction[]> {
   const response = await fetch(`${MEMPOOL_API}/address/${address}/txs`);
 
   if (!response.ok) {
-    throw new Error('Failed to fetch transactions');
+    throw new Error("Failed to fetch transactions");
   }
 
   const txs = await response.json();
 
   return txs.map((tx: Record<string, unknown>) => {
-    const vin = tx.vin as Array<{ prevout: { scriptpubkey_address?: string; value: number } | null }>;
-    const vout = tx.vout as Array<{ scriptpubkey_address?: string; value: number }>;
+    const vin = tx.vin as Array<{
+      prevout: { scriptpubkey_address?: string; value: number } | null;
+    }>;
+    const vout = tx.vout as Array<{
+      scriptpubkey_address?: string;
+      value: number;
+    }>;
     const status = tx.status as { confirmed: boolean; block_time?: number };
 
     // Sum sats flowing out of this address (inputs we owned)
@@ -262,7 +274,7 @@ export async function fetchTransactions(address: string): Promise<Transaction[]>
     return {
       txid: tx.txid as string,
       amount: Math.abs(net),
-      type: net >= 0 ? 'receive' : 'send',
+      type: net >= 0 ? "receive" : "send",
       confirmed: status.confirmed,
       timestamp: status.block_time,
     } satisfies Transaction;
@@ -314,7 +326,7 @@ export interface TxDetail {
 /** Fetch full transaction details from mempool.space. */
 export async function fetchTxDetail(txid: string): Promise<TxDetail> {
   const response = await fetch(`${MEMPOOL_API}/tx/${txid}`);
-  if (!response.ok) throw new Error('Failed to fetch transaction');
+  if (!response.ok) throw new Error("Failed to fetch transaction");
 
   const tx = await response.json();
 
@@ -329,7 +341,12 @@ export async function fetchTxDetail(txid: string): Promise<TxDetail> {
     value: number;
     scriptpubkey_type: string;
   }>;
-  const status = tx.status as { confirmed: boolean; block_height?: number; block_hash?: string; block_time?: number };
+  const status = tx.status as {
+    confirmed: boolean;
+    block_height?: number;
+    block_hash?: string;
+    block_time?: number;
+  };
 
   const inputs: TxInput[] = vin.map((input) => ({
     txid: input.txid,
@@ -386,7 +403,9 @@ export interface AddressDetail {
 }
 
 /** Fetch full address details (balance + recent txs) from mempool.space. */
-export async function fetchAddressDetail(address: string): Promise<AddressDetail> {
+export async function fetchAddressDetail(
+  address: string,
+): Promise<AddressDetail> {
   const [addrData, txs] = await Promise.all([
     fetchAddressData(address),
     fetchTransactions(address),
@@ -420,7 +439,7 @@ export interface UTXO {
 /** Fetch UTXOs for a Bitcoin address from mempool.space. */
 export async function fetchUTXOs(address: string): Promise<UTXO[]> {
   const response = await fetch(`${MEMPOOL_API}/address/${address}/utxo`);
-  if (!response.ok) throw new Error('Failed to fetch UTXOs');
+  if (!response.ok) throw new Error("Failed to fetch UTXOs");
   return response.json();
 }
 
@@ -441,17 +460,45 @@ export interface FeeRates {
 /** Fetch recommended fee rates (sat/vB) from mempool.space. */
 export async function getFeeRates(): Promise<FeeRates> {
   const response = await fetch(`${MEMPOOL_API}/fee-estimates`);
-  if (!response.ok) throw new Error('Failed to fetch fee estimates');
+  if (!response.ok) throw new Error("Failed to fetch fee estimates");
 
   const data = await response.json();
 
   return {
-    fastestFee: Math.ceil(data['1'] || 1),
-    halfHourFee: Math.ceil(data['3'] || 1),
-    hourFee: Math.ceil(data['6'] || 1),
-    economyFee: Math.ceil(data['144'] || 1),
-    minimumFee: Math.ceil(data['504'] || 1),
+    fastestFee: sanitizeFeeRate(data?.["1"]),
+    halfHourFee: sanitizeFeeRate(data?.["3"]),
+    hourFee: sanitizeFeeRate(data?.["6"]),
+    economyFee: sanitizeFeeRate(data?.["144"]),
+    minimumFee: sanitizeFeeRate(data?.["504"]),
   };
+}
+
+/**
+ * Highest fee rate we will accept from a remote endpoint, in sat/vB. Well
+ * above any real congestion (mainnet peaks have not passed ~2000 sat/vB) and
+ * far below anything that could quietly consume a wallet.
+ */
+const MAX_PLAUSIBLE_FEE_RATE = 5_000;
+
+/**
+ * Coerce a fee rate from an Esplora `/fee-estimates` response to a usable
+ * sat/vB number, falling back to 1 for anything implausible.
+ *
+ * The endpoint is remote, and this used to be `Math.ceil(data['1'] || 1)`.
+ * `||` only catches *falsy* values, so a missing key was safe but a truthy
+ * non-number — `{"1": "5"}`, `{"1": {"fee": 5}}`, the sort of thing an
+ * API-version mismatch produces — yielded `NaN`. NaN then passed every
+ * downstream guard, because they are all `<` / `>=` comparisons and every
+ * comparison with NaN is false: no change output was added, nothing threw, the
+ * balance check passed, and the UI rendered "Fee 0" because `!NaN` is true.
+ * The result was a valid, broadcastable transaction that paid the wallet's
+ * entire remaining balance to miners.
+ */
+function sanitizeFeeRate(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 1;
+  if (value < 1) return 1;
+  if (value > MAX_PLAUSIBLE_FEE_RATE) return MAX_PLAUSIBLE_FEE_RATE;
+  return Math.ceil(value);
 }
 
 /**
@@ -461,8 +508,22 @@ export async function getFeeRates(): Promise<FeeRates> {
  * @param numOutputs Number of outputs (recipient + optional change).
  * @param feeRate    Fee rate in sat/vB.
  */
-export function estimateFee(numInputs: number, numOutputs: number, feeRate: number): number {
-  const vBytes = numInputs * VBYTES_PER_INPUT + numOutputs * VBYTES_PER_OUTPUT + VBYTES_OVERHEAD;
+export function estimateFee(
+  numInputs: number,
+  numOutputs: number,
+  feeRate: number,
+): number {
+  // Assert rather than infer. A non-finite rate produces a NaN fee, and every
+  // guard downstream of this is a `<` or `>=` comparison, all of which are
+  // false for NaN — so the failure surfaces as a transaction that hands the
+  // wallet's balance to miners rather than as an error.
+  if (!Number.isFinite(feeRate) || feeRate < 1) {
+    throw new Error(`Invalid fee rate: ${feeRate} sat/vB.`);
+  }
+  const vBytes =
+    numInputs * VBYTES_PER_INPUT +
+    numOutputs * VBYTES_PER_OUTPUT +
+    VBYTES_OVERHEAD;
   return Math.ceil(vBytes * feeRate);
 }
 
@@ -482,7 +543,7 @@ export function validateBitcoinAddress(address: string): boolean {
 /** Broadcast a signed transaction hex to the Bitcoin network via mempool.space. Returns the txid. */
 export async function broadcastTransaction(txHex: string): Promise<string> {
   const response = await fetch(`${MEMPOOL_API}/tx`, {
-    method: 'POST',
+    method: "POST",
     body: txHex,
   });
 
@@ -502,7 +563,11 @@ export async function broadcastTransaction(txHex: string): Promise<string> {
  * @param feeRate      Fee rate in sat/vB.
  * @returns The max amount in sats, or 0 if the balance cannot cover fees.
  */
-export function maxSendable(totalBalance: number, numInputs: number, feeRate: number): number {
+export function maxSendable(
+  totalBalance: number,
+  numInputs: number,
+  feeRate: number,
+): number {
   // When sending max there is no change output, so only 1 output.
   const fee = estimateFee(numInputs, 1, feeRate);
   return Math.max(0, totalBalance - fee);
@@ -536,14 +601,14 @@ export function buildUnsignedPsbt(
   utxos: UTXO[],
   feeRate: number,
 ): UnsignedPsbt {
-  const internalPubkey = Buffer.from(senderPubkeyHex, 'hex');
+  const internalPubkey = Buffer.from(senderPubkeyHex, "hex");
 
   // Derive change address (same Taproot address as sender)
   const { address: changeAddress } = bitcoin.payments.p2tr({
     internalPubkey,
     network: bitcoin.networks.bitcoin,
   });
-  if (!changeAddress) throw new Error('Failed to derive change address');
+  if (!changeAddress) throw new Error("Failed to derive change address");
 
   // Build PSBT, add all UTXOs as inputs
   const psbt = new bitcoin.Psbt({ network: bitcoin.networks.bitcoin });
@@ -568,7 +633,8 @@ export function buildUnsignedPsbt(
   // Estimate fee — first assume 2 outputs (recipient + change). Change at the
   // dust limit exactly is still standard, so use >= (not >) per BIP-141/P2TR
   // relay policy (minimum non-dust output is 546 sats).
-  const change2Out = totalInput - amountSats - estimateFee(utxos.length, 2, feeRate);
+  const change2Out =
+    totalInput - amountSats - estimateFee(utxos.length, 2, feeRate);
   const hasChange = change2Out >= DUST_LIMIT;
   const numOutputs = hasChange ? 2 : 1;
   const fee = estimateFee(utxos.length, numOutputs, feeRate);
@@ -602,14 +668,16 @@ export function buildUnsignedPsbt(
  */
 export function signPsbtLocal(psbtHex: string, privateKeyHex: string): string {
   bitcoin.initEccLib(ecc);
-  const psbt = bitcoin.Psbt.fromHex(psbtHex, { network: bitcoin.networks.bitcoin });
+  const psbt = bitcoin.Psbt.fromHex(psbtHex, {
+    network: bitcoin.networks.bitcoin,
+  });
 
-  const keyPair = getECPair().fromPrivateKey(Buffer.from(privateKeyHex, 'hex'));
+  const keyPair = getECPair().fromPrivateKey(Buffer.from(privateKeyHex, "hex"));
   const internalPubkey = toXOnly(keyPair.publicKey);
 
   // Tweak private key for Taproot key-path spending (BIP-341)
   const tweakedSigner = keyPair.tweak(
-    bitcoin.crypto.taggedHash('TapTweak', internalPubkey),
+    bitcoin.crypto.taggedHash("TapTweak", internalPubkey),
   );
 
   // Per BITCOIN-SIGNING.md: inputs whose `tapInternalKey` does not match the
@@ -620,7 +688,10 @@ export function signPsbtLocal(psbtHex: string, privateKeyHex: string): string {
   for (let i = 0; i < psbt.inputCount; i++) {
     const input = psbt.data.inputs[i];
     const inputInternalKey = input.tapInternalKey;
-    if (!inputInternalKey || !Buffer.from(inputInternalKey).equals(Buffer.from(internalPubkey))) {
+    if (
+      !inputInternalKey ||
+      !Buffer.from(inputInternalKey).equals(Buffer.from(internalPubkey))
+    ) {
       continue;
     }
     psbt.signInput(i, tweakedSigner);
@@ -628,7 +699,7 @@ export function signPsbtLocal(psbtHex: string, privateKeyHex: string): string {
   }
 
   if (!signedAny) {
-    throw new Error('No inputs in this PSBT are owned by the signer.');
+    throw new Error("No inputs in this PSBT are owned by the signer.");
   }
 
   return psbt.toHex();
@@ -642,7 +713,9 @@ export function signPsbtLocal(psbtHex: string, privateKeyHex: string): string {
  */
 export function finalizePsbt(psbtHex: string): string {
   bitcoin.initEccLib(ecc);
-  const psbt = bitcoin.Psbt.fromHex(psbtHex, { network: bitcoin.networks.bitcoin });
+  const psbt = bitcoin.Psbt.fromHex(psbtHex, {
+    network: bitcoin.networks.bitcoin,
+  });
   psbt.finalizeAllInputs();
   return psbt.extractTransaction().toHex();
 }

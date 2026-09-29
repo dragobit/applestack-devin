@@ -1,4 +1,4 @@
-import { Capacitor, SystemBars, SystemBarsStyle } from '@capacitor/core';
+import { Capacitor, SystemBars, SystemBarsStyle } from "@capacitor/core";
 
 /**
  * One-time Capacitor-native bootstrap: configures system chrome to match
@@ -17,7 +17,7 @@ import { Capacitor, SystemBars, SystemBarsStyle } from '@capacitor/core';
  *    are rendered light; on a light background, dark. This is re-applied
  *    whenever:
  *      - the `class` on `<html>` changes (light / dark / any custom theme
- *        that toggles a class, e.g. your AppProvider)
+ *        that toggles a class, e.g. the ThemeSync effect in App.tsx)
  *      - the contents of `<style id="theme-vars">` change (custom themes
  *        that set CSS variables without toggling a class)
  *
@@ -37,10 +37,12 @@ export function bootstrapNative(): void {
   if (!Capacitor.isNativePlatform()) return;
 
   // iOS-only: hide the keyboard accessory bar.
-  if (Capacitor.getPlatform() === 'ios') {
-    import('@capacitor/keyboard').then(({ Keyboard }) => {
-      Keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
-    }).catch(() => {});
+  if (Capacitor.getPlatform() === "ios") {
+    import("@capacitor/keyboard")
+      .then(({ Keyboard }) => {
+        Keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
+      })
+      .catch(() => {});
   }
 
   /**
@@ -55,7 +57,7 @@ export function bootstrapNative(): void {
   }
 
   // Apply immediately. The theme class is usually set synchronously by the
-  // AppProvider useLayoutEffect before the first React paint, but we still
+  // theme effect before the first React paint, but we still
   // try early in case it's already set.
   updateStatusBar();
 
@@ -63,7 +65,7 @@ export function bootstrapNative(): void {
   const classObserver = new MutationObserver(() => updateStatusBar());
   classObserver.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['class'],
+    attributeFilter: ["class"],
   });
 
   // Re-apply whenever the injected <style id="theme-vars"> content changes
@@ -71,7 +73,7 @@ export function bootstrapNative(): void {
   // class).
   const styleObserver = new MutationObserver(() => updateStatusBar());
   const observeThemeVars = () => {
-    const el = document.getElementById('theme-vars');
+    const el = document.getElementById("theme-vars");
     if (el) {
       styleObserver.observe(el, {
         characterData: true,
@@ -96,13 +98,13 @@ export function bootstrapNative(): void {
  *   3. Parse the computed `background-color` of `<body>` and compare its
  *      perceived luminance against 0.5.
  *
- * Steps 1 and 2 cover the default mkstack theme system. Step 3 covers
+ * Steps 1 and 2 cover the default applestack theme system. Step 3 covers
  * custom themes that don't toggle the `light`/`dark` class on `<html>`.
  */
 function isBackgroundDark(): boolean {
   const cl = document.documentElement.classList;
-  if (cl.contains('dark')) return true;
-  if (cl.contains('light')) return false;
+  if (cl.contains("dark")) return true;
+  if (cl.contains("light")) return false;
 
   const bg = getComputedStyle(document.body).backgroundColor;
   const rgb = parseRgb(bg);

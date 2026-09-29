@@ -18,16 +18,18 @@ This skill adds Lightning wallet connectivity and zap (NIP-57) functionality. It
 
 All files live under `.agents/skills/nwc/files/` and must be copied into `src/` preserving the directory structure:
 
-| Skill file | Copy to |
-|---|---|
-| `files/hooks/useNWC.ts` | `src/hooks/useNWC.ts` |
-| `files/hooks/useNWCContext.ts` | `src/hooks/useNWCContext.ts` |
-| `files/hooks/useWallet.ts` | `src/hooks/useWallet.ts` |
-| `files/hooks/useZaps.ts` | `src/hooks/useZaps.ts` |
-| `files/contexts/NWCContext.tsx` | `src/contexts/NWCContext.tsx` |
+| Skill file                         | Copy to                          |
+| ---------------------------------- | -------------------------------- |
+| `files/hooks/useNWC.ts`            | `src/hooks/useNWC.ts`            |
+| `files/hooks/useNWCContext.ts`     | `src/hooks/useNWCContext.ts`     |
+| `files/hooks/useWallet.ts`         | `src/hooks/useWallet.ts`         |
+| `files/hooks/useZaps.ts`           | `src/hooks/useZaps.ts`           |
+| `files/components/NWCProvider.tsx` | `src/components/NWCProvider.tsx` |
+| `files/lib/bolt11.ts`              | `src/lib/bolt11.ts`              |
+| `files/lib/lnurlPay.ts`            | `src/lib/lnurlPay.ts`            |
 | `files/components/WalletModal.tsx` | `src/components/WalletModal.tsx` |
-| `files/components/ZapDialog.tsx` | `src/components/ZapDialog.tsx` |
-| `files/components/ZapButton.tsx` | `src/components/ZapButton.tsx` |
+| `files/components/ZapDialog.tsx`   | `src/components/ZapDialog.tsx`   |
+| `files/components/ZapButton.tsx`   | `src/components/ZapButton.tsx`   |
 
 ## Setup Instructions
 
@@ -42,7 +44,7 @@ npm install applesauce-wallet-connect @webbtc/webln-types
 - `applesauce-wallet-connect` — applesauce NIP-47 `WalletConnect` client used by `useNWC.ts` to open connections and pay invoices over the app's relay pool
 - `@webbtc/webln-types` — TypeScript types for the browser WebLN provider
 
-The zap request, LNURL, and zap-receipt logic use packages already in the project: `applesauce-common` (`ZapRequestFactory`, `EventZapsModel`, `getZapAmount`, `parseLNURLOrAddress`) and the global `eventStore` / `zapsLoader` from `src/services/nostr.ts`.
+The zap request, LNURL, and zap-receipt logic use packages already in the project: `applesauce-common` (`ZapRequestFactory`, `EventZapsModel`, `getZapAmount`) and the global `eventStore` / `zapsLoader` from `src/services/nostr.ts`. `files/lib/bolt11.ts` and `files/lib/lnurlPay.ts` also import `@scure/base` and `@noble/hashes` — both arrive transitively via `nostr-tools`/`applesauce-*`, but `npm install @scure/base @noble/hashes` to pin them explicitly if your toolchain complains.
 
 `ZapDialog` also uses the `qrcode` package to render invoices. It should already be installed in the project (it's used by `src/components/ui/qrcode.tsx`). If it's missing for any reason, also run `npm install qrcode && npm install --save-dev @types/qrcode`.
 
@@ -56,7 +58,7 @@ The `NWCProvider` must wrap any component that uses NWC, wallet, or zap hooks/co
 
 ```tsx
 // Add this import near the other provider imports at the top of src/App.tsx
-import { NWCProvider } from '@/contexts/NWCContext';
+import { NWCProvider } from "@/components/NWCProvider";
 
 // Then wrap TooltipProvider with NWCProvider inside the existing provider tree:
 export function App() {
@@ -87,26 +89,26 @@ The provider only reads/writes `localStorage`, so its exact position is flexible
 
 Once installed and wired up, the following hooks are available:
 
-| Hook | Purpose |
-|---|---|
+| Hook                                    | Purpose                                                                                                                   |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `useNWC` (from `@/hooks/useNWCContext`) | Manage NWC connections — `addConnection`, `removeConnection`, `setActiveConnection`, `getActiveConnection`, `sendPayment` |
-| `useWallet` | Unified wallet status — returns `{ hasNWC, webln, activeNWC, preferredMethod }` |
-| `useZaps` | Zap functionality — fetch zap receipts/totals, create invoices, pay via NWC/WebLN, fallback to QR |
+| `useWallet`                             | Unified wallet status — returns `{ hasNWC, webln, activeNWC, preferredMethod }`                                           |
+| `useZaps`                               | Zap functionality — fetch zap receipts/totals, create invoices, pay via NWC/WebLN, fallback to QR                         |
 
 ### `useNWC`
 
 ```tsx
-import { useNWC } from '@/hooks/useNWCContext';
+import { useNWC } from "@/hooks/useNWCContext";
 
 function MyComponent() {
   const {
-    connections,        // NWCConnection[]
-    activeConnection,   // string | null (connection string of active wallet)
-    addConnection,      // (uri: string, alias?: string) => Promise<boolean>
-    removeConnection,   // (connectionString: string) => void
-    setActiveConnection,// (connectionString: string) => void
-    getActiveConnection,// () => NWCConnection | null
-    sendPayment,        // (connection, invoice) => Promise<{ preimage: string }>
+    connections, // NWCConnection[]
+    activeConnection, // string | null (connection string of active wallet)
+    addConnection, // (uri: string, alias?: string) => Promise<boolean>
+    removeConnection, // (connectionString: string) => void
+    setActiveConnection, // (connectionString: string) => void
+    getActiveConnection, // () => NWCConnection | null
+    sendPayment, // (connection, invoice, expectedAmountMsat) => Promise<{ preimage: string }>
   } = useNWC();
 }
 ```
@@ -116,7 +118,7 @@ Connections are persisted to `localStorage` under the keys `nwc-connections` and
 ### `useWallet`
 
 ```tsx
-import { useWallet } from '@/hooks/useWallet';
+import { useWallet } from "@/hooks/useWallet";
 
 function ZapContext() {
   const { hasNWC, webln, activeNWC, preferredMethod } = useWallet();
@@ -129,25 +131,45 @@ function ZapContext() {
 ### `useZaps`
 
 ```tsx
-import { useZaps } from '@/hooks/useZaps';
-import { useWallet } from '@/hooks/useWallet';
-import type { NostrEvent } from 'nostr-tools';
+import { useZaps } from "@/hooks/useZaps";
+import { useWallet } from "@/hooks/useWallet";
+import type { NostrEvent } from "nostr-tools";
 
 function MyZapTotal({ event }: { event: NostrEvent }) {
   const { webln, activeNWC } = useWallet();
-  const { zapCount, totalSats, zap, isZapping, invoice } = useZaps(event, webln, activeNWC);
-  return <div>{totalSats} sats from {zapCount} zaps</div>;
+  const { zapCount, totalSats, zap, isZapping, invoice } = useZaps(
+    event,
+    webln,
+    activeNWC,
+  );
+  return (
+    <div>
+      {totalSats} sats from {zapCount} zaps
+    </div>
+  );
 }
 ```
 
 Zap receipts are read **reactively** from the global `eventStore` via applesauce's `EventZapsModel` (kept up to date as new receipts arrive). On mount the hook also triggers `zapsLoader(event)` from `src/services/nostr.ts` to fetch existing receipts. There is no manual cache invalidation — once a payment lands and the relay returns the kind-9735 receipt, the model updates the count automatically.
 
 The `zap(amount, comment)` function will:
-1. Look up the author's LNURL endpoint from their profile's `lud16`/`lud06` via `parseLNURLOrAddress`
+
+1. Look up the author's LNURL-pay parameters from their profile's `lud16`/`lud06` via `resolveLnurlPay`, which validates the response and pins it to HTTPS
 2. Build and sign a NIP-57 zap request with `ZapRequestFactory.event(event, msats, relays).message(comment).sign(account.signer)`
 3. Fetch a Lightning invoice from the LNURL callback (`?amount=&nostr=`)
-4. Try to pay it via NWC (preferred), then WebLN, then expose the invoice for QR/manual payment
-5. Show toast feedback; the reactive zaps model refreshes counts when the receipt arrives
+4. **Decode the invoice and reject it unless it charges exactly the requested amount**
+5. Try to pay it via NWC (preferred), then WebLN, then expose the invoice for QR/manual payment
+6. Show toast feedback; the reactive zaps model refreshes counts when the receipt arrives
+
+Step 4 is load-bearing: the LNURL endpoint is chosen by the _recipient_, so the
+invoice it returns is attacker-controlled whenever the recipient is hostile.
+`assertInvoiceAmount` in `src/lib/bolt11.ts` decodes the BOLT11 and throws
+unless the amount matches exactly. Amountless invoices are rejected outright —
+they let the payee choose the sum. `useNWC.sendPayment` takes the approved
+amount and re-checks it, so no caller can accidentally pay an unchecked
+invoice. `invoiceCommitsTo` additionally verifies the invoice's `h`
+(description-hash) tag commits to the zap request or the endpoint's LUD-06
+metadata when such a tag is present.
 
 ## Components
 
@@ -156,15 +178,18 @@ The `zap(amount, comment)` function will:
 Drop-in button that shows total sats for an event and opens a zap dialog when clicked. Hides itself automatically if the viewer isn't logged in, is the author, or the author has no Lightning address.
 
 ```tsx
-import { ZapButton } from '@/components/ZapButton';
+import { ZapButton } from "@/components/ZapButton";
 
-<ZapButton target={event} />
+<ZapButton target={event} />;
 ```
 
 Pre-computed zap data can be passed in to avoid extra queries in feed views:
 
 ```tsx
-<ZapButton target={event} zapData={{ count: 5, totalSats: 1234, isLoading: false }} />
+<ZapButton
+  target={event}
+  zapData={{ count: 5, totalSats: 1234, isLoading: false }}
+/>
 ```
 
 ### `ZapDialog`
@@ -172,11 +197,11 @@ Pre-computed zap data can be passed in to avoid extra queries in feed views:
 The full zap flow UI (amount presets, custom amount, comment, invoice QR). Usually rendered indirectly via `ZapButton`, but can be used standalone for custom triggers:
 
 ```tsx
-import { ZapDialog } from '@/components/ZapDialog';
+import { ZapDialog } from "@/components/ZapDialog";
 
 <ZapDialog target={event}>
   <button>Send a zap</button>
-</ZapDialog>
+</ZapDialog>;
 ```
 
 ### `WalletModal`
@@ -199,7 +224,7 @@ import { WalletModal } from '@/components/WalletModal';
 
 When a user sends a zap, the skill tries payment methods in this order:
 
-1. **NWC** — if there is an active connection in `useNWC`, `sendPayment` is called with the fetched invoice
+1. **NWC** — if there is an active connection in `useNWC`, `sendPayment` is called with the fetched invoice and the approved amount
 2. **WebLN** — if `window.webln` exists, it's `enable()`d (if needed) and used to pay the invoice
 3. **Manual/QR** — the invoice is exposed as a QR code and `lightning:` URI; the user pays from any wallet
 
@@ -209,7 +234,7 @@ Errors at each stage fall through to the next method, with a toast explaining wh
 
 - **NIP-47 (NWC)** — wallet connection strings start with `nostr+walletconnect://`. `applesauce-wallet-connect`'s `WalletConnect.fromConnectURI(uri, { pool })` handles the underlying encrypted (NIP-44/NIP-04) request/response events with the wallet service pubkey over the app's relay pool. Payments use `wallet.payInvoice(invoice)` which resolves to `{ preimage, fees_paid? }`.
 - **NIP-57 (Zaps)** — `ZapRequestFactory.event(event, msats, relays)` builds and tags the kind-9734 zap request. It automatically sets the `k`/`e`/`a`/`p` tags based on the target event's kind, including the `a` coordinate for addressable events (30000–39999). `.sign(account.signer)` signs it but does **not** publish — it's sent directly to the LNURL callback in the query string, which returns a BOLT11 invoice.
-- **LNURL** — resolved from the author's `lud16` (email-style) or `lud06` (bech32) metadata field via `parseLNURLOrAddress` from `applesauce-common/helpers`.
+- **LNURL** — resolved from the author's `lud16` (email-style) or `lud06` (bech32) metadata field via `resolveLnurlPay` in `src/lib/lnurlPay.ts`, which validates the endpoint response (`payRequest` tag, HTTPS callback, sane `minSendable`/`maxSendable`) and exposes the `metadata` used for invoice verification.
 - **Zap receipts** — kind 9735 events published by the LNURL service after payment. The skill reads them reactively from the `eventStore` via `EventZapsModel` and computes the sat total with `getZapAmount` (which parses the receipt's bolt11 amount / amount tag). The `zapsLoader` from `src/services/nostr.ts` fetches them by `#e`/`#a` under the hood.
 
 ## Tips

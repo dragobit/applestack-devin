@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/useToast";
 import { pool } from "@/services/nostr";
 import { WalletConnect } from "applesauce-wallet-connect";
 import { parseWalletConnectURI } from "applesauce-wallet-connect/helpers";
+import { assertInvoiceAmount } from "@/lib/bolt11";
 
 export interface NWCConnection {
   connectionString: string;
@@ -30,8 +31,13 @@ function createWallet(connectionString: string): WalletConnect {
 
 export function useNWCInternal() {
   const { toast } = useToast();
-  const [connections, setConnections] = useLocalStorage<NWCConnection[]>("nwc-connections", []);
-  const [activeConnection, setActiveConnection] = useLocalStorage<string | null>("nwc-active-connection", null);
+  const [connections, setConnections] = useLocalStorage<NWCConnection[]>(
+    "nwc-connections",
+    [],
+  );
+  const [activeConnection, setActiveConnection] = useLocalStorage<
+    string | null
+  >("nwc-active-connection", null);
 
   // Static info we can derive from the connection string itself (no network round-trip required)
   const connectionInfo = useMemo<Record<string, NWCInfo>>(() => {
@@ -46,7 +52,10 @@ export function useNWCInternal() {
   }, [connections]);
 
   // Add a new connection
-  const addConnection = async (uri: string, alias?: string): Promise<boolean> => {
+  const addConnection = async (
+    uri: string,
+    alias?: string,
+  ): Promise<boolean> => {
     // Validate the connection string by parsing it
     try {
       parseWalletConnectURI(uri);
@@ -59,7 +68,9 @@ export function useNWCInternal() {
       return false;
     }
 
-    const existingConnection = connections.find((c) => c.connectionString === uri);
+    const existingConnection = connections.find(
+      (c) => c.connectionString === uri,
+    );
     if (existingConnection) {
       toast({
         title: "Connection already exists",
@@ -82,7 +93,8 @@ export function useNWCInternal() {
       const newConnections = [...connections, connection];
       setConnections(newConnections);
 
-      if (connections.length === 0 || !activeConnection) setActiveConnection(uri);
+      if (connections.length === 0 || !activeConnection)
+        setActiveConnection(uri);
 
       toast({
         title: "Wallet connected",
@@ -92,7 +104,8 @@ export function useNWCInternal() {
       return true;
     } catch (error) {
       console.error("NWC connection failed:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
 
       toast({
         title: "Connection failed",
@@ -105,11 +118,14 @@ export function useNWCInternal() {
 
   // Remove a connection
   const removeConnection = (connectionString: string) => {
-    const filtered = connections.filter((c) => c.connectionString !== connectionString);
+    const filtered = connections.filter(
+      (c) => c.connectionString !== connectionString,
+    );
     setConnections(filtered);
 
     if (activeConnection === connectionString) {
-      const newActive = filtered.length > 0 ? filtered[0].connectionString : null;
+      const newActive =
+        filtered.length > 0 ? filtered[0].connectionString : null;
       setActiveConnection(newActive);
     }
 
@@ -128,16 +144,30 @@ export function useNWCInternal() {
 
     if (!activeConnection) return null;
 
-    const found = connections.find((c) => c.connectionString === activeConnection);
+    const found = connections.find(
+      (c) => c.connectionString === activeConnection,
+    );
     return found || null;
   }, [activeConnection, connections, setActiveConnection]);
 
   // Send a payment using a WalletConnect client created from the connection string
   const sendPayment = useCallback(
-    async (connection: NWCConnection, invoice: string): Promise<{ preimage: string }> => {
+    async (
+      connection: NWCConnection,
+      invoice: string,
+      /**
+       * Amount in millisatoshis the user approved. The wallet is handed only
+       * the invoice, so this is the last point at which the sum the user
+       * agreed to and the sum the invoice charges can be compared — without
+       * it, whoever issued the invoice decides how much leaves the wallet.
+       */
+      expectedAmountMsat: number,
+    ): Promise<{ preimage: string }> => {
       if (!connection.connectionString) {
         throw new Error("Invalid connection: missing connection string");
       }
+
+      assertInvoiceAmount(invoice, expectedAmountMsat);
 
       let wallet: WalletConnect;
       try {
@@ -160,13 +190,22 @@ export function useNWCInternal() {
 
         if (error instanceof Error) {
           if (error.message.includes("timeout")) {
-            throw new Error("Payment timed out. Please try again.", { cause: error });
+            throw new Error("Payment timed out. Please try again.", {
+              cause: error,
+            });
           } else if (error.message.includes("insufficient")) {
-            throw new Error("Insufficient balance in connected wallet.", { cause: error });
+            throw new Error("Insufficient balance in connected wallet.", {
+              cause: error,
+            });
           } else if (error.message.includes("invalid")) {
-            throw new Error("Invalid invoice or connection. Please check your wallet.", { cause: error });
+            throw new Error(
+              "Invalid invoice or connection. Please check your wallet.",
+              { cause: error },
+            );
           } else {
-            throw new Error(`Payment failed: ${error.message}`, { cause: error });
+            throw new Error(`Payment failed: ${error.message}`, {
+              cause: error,
+            });
           }
         }
 

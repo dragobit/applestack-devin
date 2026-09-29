@@ -36,11 +36,16 @@ export function useUploadFile() {
         const results = await multiServerUpload(servers, file, {
           // Each server gets a freshly signed NIP-24242 upload-auth event.
           onAuth: (_server, sha256, type) =>
-            createUploadAuth((draft) => account.signer.signEvent(draft), sha256, { type }),
+            createUploadAuth(
+              (draft) => account.signer.signEvent(draft),
+              sha256,
+              { type },
+            ),
         });
 
         const blob = Array.from(results.values())[0];
-        if (!blob) throw new Error("No upload result returned from blossom server");
+        if (!blob)
+          throw new Error("No upload result returned from blossom server");
 
         // Build NIP-94-compatible tags. The first tag is the `url` tag.
         const tags: string[][] = [

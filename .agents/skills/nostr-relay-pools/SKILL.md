@@ -20,7 +20,9 @@ import { lastValueFrom, toArray } from "rxjs";
 // One-shot request. `pool.request` emits events only and completes on EOSE,
 // so `toArray()` resolves with the full batch.
 const events = await lastValueFrom(
-  pool.request(["wss://relay.damus.io"], { kinds: [1], limit: 15 }).pipe(toArray()),
+  pool
+    .request(["wss://relay.damus.io"], { kinds: [1], limit: 15 })
+    .pipe(toArray()),
 );
 
 // Live subscription (stays open). `pool.subscription` emits NostrEvents only —
@@ -108,11 +110,11 @@ The top-level `pool` exposes the same methods but takes the relay list as the fi
 
 ## Choosing Between Reactive Reads, Group, and Single Relay
 
-| Scenario                                           | Use                                         |
-|----------------------------------------------------|---------------------------------------------|
-| Default app reads, best reach for publishing       | reactive `eventStore` + `publish()`         |
-| Trusted subset, community-specific publishing      | `pool.group([…])`                           |
-| Single-relay debugging or specialized relay access | `pool.relay(url)`                           |
+| Scenario                                           | Use                                 |
+| -------------------------------------------------- | ----------------------------------- |
+| Default app reads, best reach for publishing       | reactive `eventStore` + `publish()` |
+| Trusted subset, community-specific publishing      | `pool.group([…])`                   |
+| Single-relay debugging or specialized relay access | `pool.relay(url)`                   |
 
 ## Tips
 

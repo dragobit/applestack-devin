@@ -1,12 +1,16 @@
-import { useMemo } from 'react';
-import { useNWC } from '@/hooks/useNWCContext';
-import type { WebLNProvider } from '@webbtc/webln-types';
+import { useMemo } from "react";
+import { useNWC } from "@/hooks/useNWCContext";
+import type { WebLNProvider } from "@webbtc/webln-types";
 
 export interface WalletStatus {
   hasNWC: boolean;
   webln: WebLNProvider | null;
-  activeNWC: ReturnType<typeof useNWC>['getActiveConnection'] extends () => infer T ? T : null;
-  preferredMethod: 'nwc' | 'webln' | 'manual';
+  activeNWC: ReturnType<
+    typeof useNWC
+  >["getActiveConnection"] extends () => infer T
+    ? T
+    : null;
+  preferredMethod: "nwc" | "webln" | "manual";
 }
 
 export function useWallet() {
@@ -20,15 +24,15 @@ export function useWallet() {
 
   // Calculate status values reactively
   const hasNWC = useMemo(() => {
-    return connections.length > 0 && connections.some(c => c.isConnected);
+    return connections.length > 0 && connections.some((c) => c.isConnected);
   }, [connections]);
 
   // Determine preferred payment method
-  const preferredMethod: WalletStatus['preferredMethod'] = activeNWC
-    ? 'nwc'
+  const preferredMethod: WalletStatus["preferredMethod"] = activeNWC
+    ? "nwc"
     : webln
-    ? 'webln'
-    : 'manual';
+      ? "webln"
+      : "manual";
 
   const status: WalletStatus = {
     hasNWC,

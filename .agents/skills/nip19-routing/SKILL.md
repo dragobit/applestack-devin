@@ -11,15 +11,15 @@ Use this skill when the user wants to populate the `NIP19Page` sections with rea
 
 ## Identifier Reference
 
-| Prefix       | Payload                                                          | Use when…                                                    |
-|--------------|------------------------------------------------------------------|--------------------------------------------------------------|
-| `npub1`      | 32-byte public key                                               | Simple user reference                                        |
-| `nprofile1`  | Public key + optional relay hints + petname                      | User reference with relay context                            |
-| `note1`      | 32-byte event ID (kind:1 text notes only, per NIP-10)            | Referencing a short text note/thread                         |
-| `nevent1`    | Event ID + optional relay hints + author pubkey + kind           | Any event kind, or notes where you need relay/author context |
-| `naddr1`     | `kind` + `pubkey` + `identifier` (`d` tag) + optional relay hints | Addressable events (kind 30000-39999): articles, products    |
-| `nsec1`      | Private key                                                      | **Never display or route** — treat as a 404                  |
-| `nrelay1`    | Relay URL                                                        | Deprecated                                                   |
+| Prefix      | Payload                                                           | Use when…                                                    |
+| ----------- | ----------------------------------------------------------------- | ------------------------------------------------------------ |
+| `npub1`     | 32-byte public key                                                | Simple user reference                                        |
+| `nprofile1` | Public key + optional relay hints + petname                       | User reference with relay context                            |
+| `note1`     | 32-byte event ID (kind:1 text notes only, per NIP-10)             | Referencing a short text note/thread                         |
+| `nevent1`   | Event ID + optional relay hints + author pubkey + kind            | Any event kind, or notes where you need relay/author context |
+| `naddr1`    | `kind` + `pubkey` + `identifier` (`d` tag) + optional relay hints | Addressable events (kind 30000-39999): articles, products    |
+| `nsec1`     | Private key                                                       | **Never display or route** — treat as a 404                  |
+| `nrelay1`   | Relay URL                                                         | Deprecated                                                   |
 
 ### `note1` vs `nevent1`
 
@@ -42,39 +42,41 @@ Use this skill when the user wants to populate the `NIP19Page` sections with rea
 Nostr relay filters only accept hex strings. Always decode the NIP-19 identifier **before** building a filter, and turn the decoded payload — never the raw bech32 string — into the filter.
 
 ```ts
-import { nip19 } from 'nostr-tools';
-import type { Filter } from 'applesauce-core/helpers';
+import { nip19 } from "nostr-tools";
+import type { Filter } from "applesauce-core/helpers";
 
 /** Build a secure relay filter from a NIP-19 identifier. */
 function filtersFor(value: string): Filter[] {
   const decoded = nip19.decode(value); // throws on invalid input
 
   switch (decoded.type) {
-    case 'npub':
+    case "npub":
       return [{ kinds: [0], authors: [decoded.data], limit: 1 }];
 
-    case 'nprofile':
+    case "nprofile":
       return [{ kinds: [0], authors: [decoded.data.pubkey], limit: 1 }];
 
-    case 'note':
+    case "note":
       return [{ ids: [decoded.data], kinds: [1], limit: 1 }];
 
-    case 'nevent':
+    case "nevent":
       return [{ ids: [decoded.data.id], limit: 1 }];
 
-    case 'naddr': {
+    case "naddr": {
       const { kind, pubkey, identifier } = decoded.data;
-      return [{
-        kinds: [kind],
-        authors: [pubkey],        // critical: prevents d-tag spoofing
-        '#d': [identifier],
-        limit: 1,
-      }];
+      return [
+        {
+          kinds: [kind],
+          authors: [pubkey], // critical: prevents d-tag spoofing
+          "#d": [identifier],
+          limit: 1,
+        },
+      ];
     }
 
     default:
       // nsec, nrelay, unknown → 404
-      throw new Error('Unsupported Nostr identifier');
+      throw new Error("Unsupported Nostr identifier");
   }
 }
 ```
@@ -86,9 +88,9 @@ This template reads through the global `EventStore`, not one-off relay queries. 
 For replaceable/addressable events (kind 0 profiles, `naddr`), use the store accessors plus a loader:
 
 ```tsx
-import { useEffect } from 'react';
-import { use$ } from '@/hooks/use$';
-import { eventStore, addressLoader } from '@/services/nostr';
+import { useEffect } from "react";
+import { use$ } from "@/hooks/use$";
+import { eventStore, addressLoader } from "@/services/nostr";
 
 function Profile({ pubkey }: { pubkey: string }) {
   // Reactive read from the store
@@ -108,7 +110,7 @@ function Profile({ pubkey }: { pubkey: string }) {
 For single events by id (`note`, `nevent`), read with `eventStore.event(...)` and fetch with `eventLoader`, passing along any relay/author hints the pointer carried:
 
 ```tsx
-import { eventStore, eventLoader } from '@/services/nostr';
+import { eventStore, eventLoader } from "@/services/nostr";
 
 const event = use$(() => eventStore.event(id), [id]);
 useEffect(() => {
@@ -120,9 +122,9 @@ useEffect(() => {
 For feeds/timelines, render from `eventStore.timeline(filtersFor(value))` (see the `nostr-infinite-scroll` skill). When you genuinely need an imperative one-shot fetch (no reactive UI), use the pool directly:
 
 ```ts
-import { pool } from '@/services/nostr';
-import { extraRelays } from '@/services/settings';
-import { lastValueFrom, toArray } from 'rxjs';
+import { pool } from "@/services/nostr";
+import { extraRelays } from "@/services/settings";
+import { lastValueFrom, toArray } from "rxjs";
 
 const events = await lastValueFrom(
   pool.request(extraRelays.getValue(), filtersFor(value)).pipe(toArray()),
@@ -154,12 +156,12 @@ const { kind, pubkey, identifier } = nip19.decode(naddr).data;
 
 To turn it into a real router, replace each placeholder section with a concrete component:
 
-| `decoded.type`        | Typical view                                                  |
-|-----------------------|---------------------------------------------------------------|
-| `npub` / `nprofile`   | Profile page: header from kind 0, feed of the user's events   |
-| `note`                | Single kind:1 text note with thread + replies                 |
-| `nevent`              | Generic event renderer; branch on `kind` for specialized UIs  |
-| `naddr`               | Addressable-event view (article, product, community, etc.)    |
+| `decoded.type`      | Typical view                                                 |
+| ------------------- | ------------------------------------------------------------ |
+| `npub` / `nprofile` | Profile page: header from kind 0, feed of the user's events  |
+| `note`              | Single kind:1 text note with thread + replies                |
+| `nevent`            | Generic event renderer; branch on `kind` for specialized UIs |
+| `naddr`             | Addressable-event view (article, product, community, etc.)   |
 
 Inside each branch, pass the decoded payload (not the raw bech32 string) to a child component. That keeps filter construction colocated with the fetching hook and removes any chance of a re-decode mismatch.
 

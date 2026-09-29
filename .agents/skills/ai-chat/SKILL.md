@@ -11,8 +11,8 @@ This skill provides the `useShakespeare` hook for AI chat completions with Nostr
 
 ## Files Provided by This Skill
 
-| Skill file | Copy to |
-|---|---|
+| Skill file                      | Copy to                       |
+| ------------------------------- | ----------------------------- |
 | `files/hooks/useShakespeare.ts` | `src/hooks/useShakespeare.ts` |
 
 ## Setup Instructions
@@ -30,25 +30,33 @@ Copy `.agents/skills/ai-chat/files/hooks/useShakespeare.ts` into `src/hooks/useS
 Use the `useShakespeare` hook for AI chat completions with Nostr authentication. The API dynamically provides available models, so you should query them at runtime rather than hardcoding model names.
 
 ```tsx
-import { useShakespeare, type ChatMessage, type Model } from '@/hooks/useShakespeare';
+import {
+  useShakespeare,
+  type ChatMessage,
+  type Model,
+} from "@/hooks/useShakespeare";
 
-const { 
-  sendChatMessage, 
-  sendStreamingMessage, 
-  getAvailableModels, 
-  isLoading, 
-  error, 
-  isAuthenticated 
+const {
+  sendChatMessage,
+  sendStreamingMessage,
+  getAvailableModels,
+  isLoading,
+  error,
+  isAuthenticated,
 } = useShakespeare();
 ```
 
 #### Model Selector Component
 
 ```tsx
-function ModelSelector({ onModelSelect }: { onModelSelect: (modelId: string) => void }) {
+function ModelSelector({
+  onModelSelect,
+}: {
+  onModelSelect: (modelId: string) => void;
+}) {
   const { getAvailableModels, isLoading } = useShakespeare();
   const [models, setModels] = useState<Model[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [selectedModel, setSelectedModel] = useState<string>("");
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -56,12 +64,14 @@ function ModelSelector({ onModelSelect }: { onModelSelect: (modelId: string) => 
         const response = await getAvailableModels();
         // Sort models by total cost (cheapest first)
         const sortedModels = response.data.sort((a, b) => {
-          const costA = parseFloat(a.pricing.prompt) + parseFloat(a.pricing.completion);
-          const costB = parseFloat(b.pricing.prompt) + parseFloat(b.pricing.completion);
+          const costA =
+            parseFloat(a.pricing.prompt) + parseFloat(a.pricing.completion);
+          const costB =
+            parseFloat(b.pricing.prompt) + parseFloat(b.pricing.completion);
           return costA - costB;
         });
         setModels(sortedModels);
-        
+
         // Select the cheapest model by default
         if (sortedModels.length > 0) {
           const cheapestModel = sortedModels[0];
@@ -69,7 +79,7 @@ function ModelSelector({ onModelSelect }: { onModelSelect: (modelId: string) => 
           onModelSelect(cheapestModel.id);
         }
       } catch (err) {
-        console.error('Failed to fetch models:', err);
+        console.error("Failed to fetch models:", err);
       }
     };
 
@@ -84,19 +94,22 @@ function ModelSelector({ onModelSelect }: { onModelSelect: (modelId: string) => 
   return (
     <div>
       <label htmlFor="model-select">Choose Model:</label>
-      <select 
+      <select
         id="model-select"
-        value={selectedModel} 
+        value={selectedModel}
         onChange={(e) => handleModelChange(e.target.value)}
         disabled={isLoading}
       >
         <option value="">Select a model...</option>
         {models.map((model, index) => {
-          const totalCost = parseFloat(model.pricing.prompt) + parseFloat(model.pricing.completion);
+          const totalCost =
+            parseFloat(model.pricing.prompt) +
+            parseFloat(model.pricing.completion);
           const isCheapest = index === 0;
           return (
             <option key={model.id} value={model.id}>
-              {model.name} - {isCheapest ? "Cheapest" : `$${totalCost.toFixed(6)}/token`}
+              {model.name} -{" "}
+              {isCheapest ? "Cheapest" : `$${totalCost.toFixed(6)}/token`}
             </option>
           );
         })}
@@ -110,26 +123,30 @@ function ModelSelector({ onModelSelect }: { onModelSelect: (modelId: string) => 
 
 ```tsx
 function AIChat() {
-  const { sendChatMessage, isLoading, error, isAuthenticated } = useShakespeare();
+  const { sendChatMessage, isLoading, error, isAuthenticated } =
+    useShakespeare();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [input, setInput] = useState("");
+  const [selectedModel, setSelectedModel] = useState<string>("");
 
   const handleSend = async () => {
     if (!input.trim() || !selectedModel) return;
 
-    const newMessages = [...messages, { role: 'user', content: input }];
+    const newMessages = [...messages, { role: "user", content: input }];
     setMessages(newMessages);
-    setInput('');
+    setInput("");
 
     try {
       const response = await sendChatMessage(newMessages, selectedModel);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: response.choices[0].message.content as string
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: response.choices[0].message.content as string,
+        },
+      ]);
     } catch (err) {
-      console.error('Chat error:', err);
+      console.error("Chat error:", err);
     }
   };
 
@@ -146,7 +163,10 @@ function AIChat() {
 
       <div className="space-y-2 mb-4">
         {messages.map((msg, i) => (
-          <div key={i} className={`p-2 rounded ${msg.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}`}>
+          <div
+            key={i}
+            className={`p-2 rounded ${msg.role === "user" ? "bg-blue-100" : "bg-gray-100"}`}
+          >
             <strong>{msg.role}:</strong> {msg.content}
           </div>
         ))}
@@ -156,14 +176,16 @@ function AIChat() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+          onKeyPress={(e) => e.key === "Enter" && handleSend()}
           className="flex-1 p-2 border rounded"
           disabled={isLoading || !selectedModel}
-          placeholder={!selectedModel ? "Select a model first..." : "Type your message..."}
+          placeholder={
+            !selectedModel ? "Select a model first..." : "Type your message..."
+          }
         />
-        <button 
-          onClick={handleSend} 
-          disabled={isLoading || !selectedModel} 
+        <button
+          onClick={handleSend}
+          disabled={isLoading || !selectedModel}
           className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
         >
           Send
@@ -180,32 +202,35 @@ function AIChat() {
 function StreamingChat() {
   const { sendStreamingMessage } = useShakespeare();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [currentResponse, setCurrentResponse] = useState('');
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [currentResponse, setCurrentResponse] = useState("");
+  const [selectedModel, setSelectedModel] = useState<string>("");
 
   const handleStreaming = async (content: string) => {
     if (!selectedModel) return;
-    
-    setCurrentResponse('');
-    const newMessages = [...messages, { role: 'user', content }];
+
+    setCurrentResponse("");
+    const newMessages = [...messages, { role: "user", content }];
     setMessages(newMessages);
 
     try {
       await sendStreamingMessage(newMessages, selectedModel, (chunk) => {
-        setCurrentResponse(prev => prev + chunk);
+        setCurrentResponse((prev) => prev + chunk);
       });
-      
+
       // Add the complete response to messages
       if (currentResponse.trim()) {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: currentResponse
-        }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: currentResponse,
+          },
+        ]);
       }
     } catch (err) {
-      console.error('Streaming error:', err);
+      console.error("Streaming error:", err);
     } finally {
-      setCurrentResponse('');
+      setCurrentResponse("");
     }
   };
 
@@ -249,7 +274,13 @@ Models are dynamically fetched from the Shakespeare API and include:
 When using Dialog components, always ensure accessibility compliance by including required elements:
 
 ```tsx
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 // ✅ Correct - Always include DialogHeader with DialogTitle
 <Dialog open={isOpen} onOpenChange={onClose}>
@@ -262,7 +293,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
     </DialogHeader>
     {/* Dialog content */}
   </DialogContent>
-</Dialog>
+</Dialog>;
 ```
 
 **Important**: Even if you want to hide the title visually, use the `VisuallyHidden` component to maintain accessibility:
@@ -274,7 +305,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
   <VisuallyHidden>
     <DialogTitle>Hidden Title for Screen Readers</DialogTitle>
   </VisuallyHidden>
-</DialogHeader>
+</DialogHeader>;
 ```
 
 ### Streaming Response Handling
@@ -283,7 +314,7 @@ When implementing streaming chat interfaces, always accumulate streamed content 
 
 ```tsx
 const handleStreamingResponse = async () => {
-  let streamedContent = ''; // ✅ Use local variable to accumulate content
+  let streamedContent = ""; // ✅ Use local variable to accumulate content
 
   try {
     await sendStreamingMessage(messages, model, (chunk) => {
@@ -295,14 +326,14 @@ const handleStreamingResponse = async () => {
     if (streamedContent.trim()) {
       const assistantMessage: MessageDisplay = {
         id: Date.now().toString(),
-        role: 'assistant',
+        role: "assistant",
         content: streamedContent, // ✅ Use accumulated content
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
     }
   } finally {
-    setCurrentStreamingMessage(''); // ✅ Clear streaming state after saving
+    setCurrentStreamingMessage(""); // ✅ Clear streaming state after saving
   }
 };
 ```
@@ -312,8 +343,8 @@ const handleStreamingResponse = async () => {
 Always wrap AI components with error boundaries and provide user-friendly error messages for common failure scenarios:
 
 ```tsx
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 function AIChatWithErrorBoundary() {
   return (
@@ -323,7 +354,8 @@ function AIChatWithErrorBoundary() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Something went wrong with the AI chat. Please refresh the page and try again.
+              Something went wrong with the AI chat. Please refresh the page and
+              try again.
             </AlertDescription>
           </Alert>
         </div>
@@ -343,12 +375,16 @@ function useAIWithErrorHandling() {
       await sendChatMessage(messages, modelId);
     } catch (err) {
       // Handle specific error types with user-friendly messages
-      if (err.message.includes('401')) {
-        throw new Error('Authentication failed. Please log in again.');
-      } else if (err.message.includes('402')) {
-        throw new Error('Insufficient credits. Please add credits to use premium features.');
-      } else if (err.message.includes('network')) {
-        throw new Error('Network error. Please check your internet connection.');
+      if (err.message.includes("401")) {
+        throw new Error("Authentication failed. Please log in again.");
+      } else if (err.message.includes("402")) {
+        throw new Error(
+          "Insufficient credits. Please add credits to use premium features.",
+        );
+      } else if (err.message.includes("network")) {
+        throw new Error(
+          "Network error. Please check your internet connection.",
+        );
       }
       throw err; // Re-throw for error boundary
     }

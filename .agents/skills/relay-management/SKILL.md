@@ -22,8 +22,8 @@ The component derives a per-relay `read`/`write` view from these two lists. A re
 
 ## Files Provided by This Skill
 
-| Skill file | Copy to |
-|---|---|
+| Skill file                              | Copy to                               |
+| --------------------------------------- | ------------------------------------- |
 | `files/components/RelayListManager.tsx` | `src/components/RelayListManager.tsx` |
 
 ## Setup Instructions
@@ -58,7 +58,7 @@ This mirrors how the existing relay UI in `src/` works (`RelayListInput`, `Relay
 Drop the component anywhere you want a relay settings panel — typically a dedicated settings page:
 
 ```tsx
-import { RelayListManager } from '@/components/RelayListManager';
+import { RelayListManager } from "@/components/RelayListManager";
 
 export default function SettingsPage() {
   return (
@@ -102,5 +102,5 @@ NIP-65 defines kind 10002 ("Relay List Metadata") as a replaceable event contain
 
 - **`src/services/nostr.ts`** — exports the global `eventStore`, `pool`, and `publish`.
 - **`src/services/actions.ts`** — exports `runner` (the `ActionRunner` bound to `accounts.signer`) and the `Actions` namespace.
-- **`src/services/settings.ts`** — persists the app's default query/lookup relay lists (`extraRelays`, `lookupRelays`) to `localStorage` via the `persist` helper. These are the *app-level* connection relays, separate from the *user's* published NIP-65 list that this component manages.
+- **`src/services/settings.ts`** — persists the app's default query/lookup relay lists (`extraRelays`, `lookupRelays`) to `localStorage` via the `persist` helper. These are the _app-level_ connection relays, separate from the _user's_ published NIP-65 list that this component manages.
 - **Existing relay UI** (`src/components/RelayListInput.tsx`, `RelayItem.tsx`, `NewRelayForm.tsx`, `RelayAvatar.tsx`) — the in-template patterns this component mirrors for reading relay state via `use$` and the global pool/store.

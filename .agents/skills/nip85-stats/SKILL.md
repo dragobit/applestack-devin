@@ -11,25 +11,25 @@ This skill adds three hooks — `useNip85UserStats`, `useNip85EventStats`, `useN
 
 ## Kinds Used
 
-| Kind  | Subject                      | `d` tag value              |
-| ----- | ---------------------------- | -------------------------- |
-| 30382 | User                         | user pubkey (hex)          |
-| 30383 | Event (regular, kind 1 etc.) | event id (hex)             |
-| 30384 | Addressable event            | `<kind>:<pubkey>:<d-tag>`  |
+| Kind  | Subject                      | `d` tag value             |
+| ----- | ---------------------------- | ------------------------- |
+| 30382 | User                         | user pubkey (hex)         |
+| 30383 | Event (regular, kind 1 etc.) | event id (hex)            |
+| 30384 | Addressable event            | `<kind>:<pubkey>:<d-tag>` |
 
 Each hook loads one addressable event via the repo's `addressLoader` and reads it reactively from the global `eventStore` with `eventStore.replaceable({ kind, pubkey: statsPubkey, identifier })`. **Constraining the address pointer to the trusted provider `pubkey` is required** — without it, anyone could publish a fake assertion with the same `d` tag and the client would accept it.
 
 ## Files Provided by This Skill
 
-| Skill file | Copy to |
-|---|---|
+| Skill file                     | Copy to                      |
+| ------------------------------ | ---------------------------- |
 | `files/hooks/useNip85Stats.ts` | `src/hooks/useNip85Stats.ts` |
 
 ## Setup Instructions
 
 ### 1. Copy the Hooks File
 
-Copy `.agents/skills/nip85-stats/files/hooks/useNip85Stats.ts` into `src/hooks/useNip85Stats.ts`. It uses applesauce only — `use$` / `useEventStore` from the repo hooks, the global `addressLoader` from `@/services/nostr`, and `extraRelays` + a new `nip85StatsPubkey` subject from `@/services/settings`. No `@nostrify/*` or `@tanstack/react-query`.
+Copy `.agents/skills/nip85-stats/files/hooks/useNip85Stats.ts` into `src/hooks/useNip85Stats.ts`. It uses applesauce only — `use$` / `useEventStore` from the repo hooks, the global `addressLoader` from `@/services/nostr`, and `extraRelays` + a new `nip85StatsPubkey` subject from `@/services/settings`. It uses no external query or Nostr framework beyond applesauce.
 
 ### 2. Add the `nip85StatsPubkey` Setting
 
@@ -58,7 +58,7 @@ That's the entire setup — there is no `AppConfig`, Zod schema, or `TestApp` co
 ### User stats (kind 30382)
 
 ```tsx
-import { useNip85UserStats } from '@/hooks/useNip85Stats';
+import { useNip85UserStats } from "@/hooks/useNip85Stats";
 
 function FollowerCount({ pubkey }: { pubkey: string }) {
   const stats = useNip85UserStats(pubkey);
@@ -70,7 +70,7 @@ function FollowerCount({ pubkey }: { pubkey: string }) {
 ### Event stats (kind 30383)
 
 ```tsx
-import { useNip85EventStats } from '@/hooks/useNip85Stats';
+import { useNip85EventStats } from "@/hooks/useNip85Stats";
 
 function NoteStats({ eventId }: { eventId: string }) {
   const stats = useNip85EventStats(eventId);
@@ -91,9 +91,17 @@ function NoteStats({ eventId }: { eventId: string }) {
 The `addr` argument is the full NIP-01 event address `<kind>:<pubkey>:<d-tag>`:
 
 ```tsx
-import { useNip85AddrStats } from '@/hooks/useNip85Stats';
+import { useNip85AddrStats } from "@/hooks/useNip85Stats";
 
-function ArticleStats({ kind, pubkey, identifier }: { kind: number; pubkey: string; identifier: string }) {
+function ArticleStats({
+  kind,
+  pubkey,
+  identifier,
+}: {
+  kind: number;
+  pubkey: string;
+  identifier: string;
+}) {
   const stats = useNip85AddrStats(`${kind}:${pubkey}:${identifier}`);
   if (!stats) return null;
   return <span>{stats.reactionCount} reactions</span>;
@@ -106,7 +114,7 @@ function ArticleStats({ kind, pubkey, identifier }: { kind: number; pubkey: stri
 - **Reactive, no blocking:** Each hook subscribes to the global `eventStore` with `use$` and triggers a one-time `addressLoader` call in an effect. The loader is a cold observable that completes once data arrives; loader errors are swallowed so a slow/failing stats relay never throws into the UI.
 - **Deduped & cached by the EventStore:** The `addressLoader` batches and deduplicates in-flight requests and checks the local nostrdb cache first. Once an assertion is in the `eventStore`, every component reading the same `(kind, pubkey, identifier)` shares it; swapping `nip85StatsPubkey` re-subscribes to a different address pointer automatically.
 - **Missing tags = 0:** A tag absent from the assertion is reported as `0` rather than `undefined`, matching NIP-85's "no data" semantics.
-- **Not the source of truth:** For interactive features (did *this* user like *this* post?) you still need to query the underlying reaction/zap/repost events. NIP-85 only provides aggregate counts.
+- **Not the source of truth:** For interactive features (did _this_ user like _this_ post?) you still need to query the underlying reaction/zap/repost events. NIP-85 only provides aggregate counts.
 
 ## Extending the Stats
 
@@ -116,16 +124,16 @@ The hooks expose a small subset of the tags defined in NIP-85. To surface more (
 export interface Nip85UserStats {
   followers: number;
   postCount: number;
-  rank: number;            // new
-  zapAmtReceived: number;  // new
+  rank: number; // new
+  zapAmtReceived: number; // new
 }
 
 // inside the parseUserStats helper
 return {
-  followers: getIntTag(tags, 'followers'),
-  postCount: getIntTag(tags, 'post_cnt'),
-  rank: getIntTag(tags, 'rank'),
-  zapAmtReceived: getIntTag(tags, 'zap_amt_recd'),
+  followers: getIntTag(tags, "followers"),
+  postCount: getIntTag(tags, "post_cnt"),
+  rank: getIntTag(tags, "rank"),
+  zapAmtReceived: getIntTag(tags, "zap_amt_recd"),
 };
 ```
 
@@ -136,17 +144,17 @@ See the full tag table in [NIP-85](https://github.com/nostr-protocol/nips/blob/m
 If you want the user to change providers at runtime, bind an input to the `nip85StatsPubkey` subject. Read it reactively with `use$` and push validated values back with `.next()` — `persist` saves them automatically:
 
 ```tsx
-import { use$ } from '@/hooks/use$';
-import { nip85StatsPubkey } from '@/services/settings';
+import { use$ } from "@/hooks/use$";
+import { nip85StatsPubkey } from "@/services/settings";
 
 function StatsProviderInput() {
-  const value = use$(nip85StatsPubkey) ?? '';
+  const value = use$(nip85StatsPubkey) ?? "";
   return (
     <input
       value={value}
       onChange={(e) => {
         const v = e.target.value.trim().toLowerCase();
-        if (v === '' || /^[0-9a-f]{64}$/.test(v)) {
+        if (v === "" || /^[0-9a-f]{64}$/.test(v)) {
           nip85StatsPubkey.next(v);
         }
       }}
