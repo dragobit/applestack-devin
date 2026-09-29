@@ -62,7 +62,7 @@ Two GitHub workflows ship with the repo; **nsite is the default target**.
 
 ### nsite (NIP-5A) — `deploy-nsite.yml`
 
-Runs on pushes to `main` and on `workflow_dispatch`. Builds `dist/` and publishes it as an [nsite](https://nsite.lol): files go to Blossom as blobs, then a kind `15128` manifest maps paths to hashes. Live at `https://<site-npub>.nsite.lol` and other public gateways.
+Runs on pushes to `master` (and `main`, for forks that rename the default branch) and on `workflow_dispatch`. Builds `dist/` and publishes it as an [nsite](https://nsite.lol): files go to Blossom as blobs, then a kind `15128` manifest maps paths to hashes. Live at `https://<site-npub>.nsite.lol` and other public gateways.
 
 Setup:
 

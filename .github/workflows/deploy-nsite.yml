@@ -5,7 +5,9 @@ on:
   # a kind 15128 manifest) via scripts/deploy-nsite.mjs — live at
   # https://<app-npub>.nsite.lol and other public gateways.
   push:
-    branches: ["main"]
+    # This repo's default branch is `master`; `main` is kept so forks that
+    # rename their default branch still trigger deploys.
+    branches: ["master", "main"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
