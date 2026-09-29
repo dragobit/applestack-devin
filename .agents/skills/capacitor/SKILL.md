@@ -11,15 +11,15 @@ This skill turns the web app into a native iOS and Android binary using [Capacit
 
 ## What this skill provides
 
-| Capability | Web behavior | Native behavior |
-|---|---|---|
-| **Haptics** (`impactLight`, `notificationSuccess`, …) | `navigator.vibrate()` on Android browsers | Taptic engine / Android haptics |
-| **`downloadTextFile(filename, content)`** | `<a download>` click | Writes to app Documents directory |
-| **`openUrl(url)`** | `window.open(url, '_blank')` | Native share sheet |
-| **`secureStorage` / `useSecureLocalStorage`** | `localStorage` | iOS Keychain / Android KeyStore, auto-migrates plaintext values |
-| **`<DeepLinkHandler />`** | no-op | Forwards OS `appUrlOpen` into React Router |
-| **`bootstrapNative()`** | no-op | Hides iOS keyboard accessory bar; syncs system-bar icon style with theme |
-| **Safe-area utilities** (Tailwind) | `env(safe-area-inset-*)` | `env(safe-area-inset-*)` + `SystemBars` back-fill on Android |
+| Capability                                            | Web behavior                              | Native behavior                                                          |
+| ----------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------ |
+| **Haptics** (`impactLight`, `notificationSuccess`, …) | `navigator.vibrate()` on Android browsers | Taptic engine / Android haptics                                          |
+| **`downloadTextFile(filename, content)`**             | `<a download>` click                      | Writes to app Documents directory                                        |
+| **`openUrl(url)`**                                    | `window.open(url, '_blank')`              | Native share sheet                                                       |
+| **`secureStorage` / `useSecureLocalStorage`**         | `localStorage`                            | iOS Keychain / Android KeyStore, auto-migrates plaintext values          |
+| **`<DeepLinkHandler />`**                             | no-op                                     | Forwards OS `appUrlOpen` into React Router                               |
+| **`bootstrapNative()`**                               | no-op                                     | Hides iOS keyboard accessory bar; syncs system-bar icon style with theme |
+| **Safe-area utilities** (Tailwind)                    | `env(safe-area-inset-*)`                  | `env(safe-area-inset-*)` + `SystemBars` back-fill on Android             |
 
 Every helper is SSR-safe and web-safe — import and call unconditionally from shared components. Each source file ships with a JSDoc header covering the exact API, gotchas, and usage examples; read them after copying.
 
@@ -27,17 +27,17 @@ Every helper is SSR-safe and web-safe — import and call unconditionally from s
 
 Copy from `.agents/skills/capacitor/files/` into the matching project location:
 
-| Skill file | Copy to |
-|---|---|
-| `files/lib/haptics.ts` | `src/lib/haptics.ts` |
-| `files/lib/downloadFile.ts` | `src/lib/downloadFile.ts` |
-| `files/lib/secureStorage.ts` | `src/lib/secureStorage.ts` |
-| `files/lib/nativeBootstrap.ts` | `src/lib/nativeBootstrap.ts` |
-| `files/hooks/useSecureLocalStorage.ts` | `src/hooks/useSecureLocalStorage.ts` |
-| `files/components/DeepLinkHandler.tsx` | `src/components/DeepLinkHandler.tsx` |
-| `files/capacitor.config.ts` | `capacitor.config.ts` (project root — edit `appId`, `appName`, `scheme`, background colors) |
-| `files/scripts/patch-cap-config.mjs` | `scripts/patch-cap-config.mjs` — only needed if you add **local** (non-SPM) native plugin classes; otherwise skip |
-| `files/safe-area-shim.css` | `src/safe-area-shim.css` — **only if** you need Android WebView <140 support (see shim file header and troubleshooting below) |
+| Skill file                             | Copy to                                                                                                                       |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `files/lib/haptics.ts`                 | `src/lib/haptics.ts`                                                                                                          |
+| `files/lib/downloadFile.ts`            | `src/lib/downloadFile.ts`                                                                                                     |
+| `files/lib/secureStorage.ts`           | `src/lib/secureStorage.ts`                                                                                                    |
+| `files/lib/nativeBootstrap.ts`         | `src/lib/nativeBootstrap.ts`                                                                                                  |
+| `files/hooks/useSecureLocalStorage.ts` | `src/hooks/useSecureLocalStorage.ts`                                                                                          |
+| `files/components/DeepLinkHandler.tsx` | `src/components/DeepLinkHandler.tsx`                                                                                          |
+| `files/capacitor.config.ts`            | `capacitor.config.ts` (project root — edit `appId`, `appName`, `scheme`, background colors)                                   |
+| `files/scripts/patch-cap-config.mjs`   | `scripts/patch-cap-config.mjs` — only needed if you add **local** (non-SPM) native plugin classes; otherwise skip             |
+| `files/safe-area-shim.css`             | `src/safe-area-shim.css` — **only if** you need Android WebView <140 support (see shim file header and troubleshooting below) |
 
 ## Setup
 
@@ -83,8 +83,10 @@ Edit `appId` (reverse-DNS; **cannot be changed after publishing**), `appName`, `
 iOS won't expose `env(safe-area-inset-*)` without `viewport-fit=cover`:
 
 ```html
-<meta name="viewport"
-  content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+/>
 ```
 
 ### 6. Wire up bootstrap and deep links
@@ -93,9 +95,9 @@ Call `bootstrapNative()` **before** React mounts, so system bars are themed at f
 
 ```tsx
 // src/main.tsx
-import { bootstrapNative } from '@/lib/nativeBootstrap';
+import { bootstrapNative } from "@/lib/nativeBootstrap";
 bootstrapNative();
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById("root")!).render(<App />);
 ```
 
 Render `<DeepLinkHandler />` **inside** `<BrowserRouter>` so `useNavigate()` works:
@@ -108,6 +110,20 @@ Render `<DeepLinkHandler />` **inside** `<BrowserRouter>` so `useNavigate()` wor
   {/* <Routes>…</Routes> */}
 </BrowserRouter>
 ```
+
+**A deep link is an untrusted navigation.** Any web page the user visits can
+open `myapp://whatever` — no prompt, no gesture beyond the tap that got them to
+the page. `DeepLinkHandler` turns that into a `navigate()` call, so a custom
+scheme lets an attacker put the user on any route in your app. Universal links
+(`https://`) are safer, since the OS only routes them to you after verifying
+`apple-app-site-association` / `assetlinks.json`, but the app has no way to tell
+the two apart once the event arrives.
+
+So: **no route may perform a side effect on mount.** A route that publishes an
+event, follows a user, sends a payment, or deletes something as soon as it
+renders is an action any website can trigger silently. Render a confirmation
+the user has to click instead. If your app has no custom scheme, restricting
+the handler to `url.protocol === 'https:'` is worth doing as well.
 
 ### 7. Add platforms and build
 
@@ -129,22 +145,25 @@ Commit the generated `android/` and `ios/` directories (signing keys stay exclud
 Each file's JSDoc header has full usage details. Quick tour:
 
 ```tsx
-import { impactLight, notificationSuccess } from '@/lib/haptics';
-import { downloadTextFile, openUrl } from '@/lib/downloadFile';
-import { secureStorage } from '@/lib/secureStorage';
-import { useSecureLocalStorage } from '@/hooks/useSecureLocalStorage';
+import { impactLight, notificationSuccess } from "@/lib/haptics";
+import { downloadTextFile, openUrl } from "@/lib/downloadFile";
+import { secureStorage } from "@/lib/secureStorage";
+import { useSecureLocalStorage } from "@/hooks/useSecureLocalStorage";
 
-impactLight();                                         // fire-and-forget
-notificationSuccess();                                 // silent no-op on unsupported platforms
+impactLight(); // fire-and-forget
+notificationSuccess(); // silent no-op on unsupported platforms
 
-await downloadTextFile('export.json', JSON.stringify(data));
-await openUrl('https://example.com');
+await downloadTextFile("export.json", JSON.stringify(data));
+await openUrl("https://example.com");
 
-await secureStorage.setItem('nwc:active', conn);
-await secureStorage.getItem('nwc:active');
+await secureStorage.setItem("nwc:active", conn);
+await secureStorage.getItem("nwc:active");
 
-const [conn, setConn, ready] = useSecureLocalStorage<string | null>('nwc:active', null);
-if (!ready) return <Spinner />;                        // native reads are async
+const [conn, setConn, ready] = useSecureLocalStorage<string | null>(
+  "nwc:active",
+  null,
+);
+if (!ready) return <Spinner />; // native reads are async
 ```
 
 ## Safe-area utilities

@@ -31,7 +31,12 @@ export function ZapButton({
   );
 
   // Don't show zap button if user is not logged in, is the author, or author has no lightning address
-  if (!account || !target || account.pubkey === target.pubkey || (!profile?.lud16 && !profile?.lud06)) {
+  if (
+    !account ||
+    !target ||
+    account.pubkey === target.pubkey ||
+    (!profile?.lud16 && !profile?.lud06)
+  ) {
     return null;
   }
 
@@ -44,7 +49,11 @@ export function ZapButton({
       <div className={`flex items-center gap-1 ${className}`}>
         <Zap className="h-4 w-4" />
         <span className="text-xs">
-          {showLoading ? "..." : showCount && totalSats > 0 ? `${totalSats.toLocaleString()}` : "Zap"}
+          {showLoading
+            ? "..."
+            : showCount && totalSats > 0
+              ? `${totalSats.toLocaleString()}`
+              : "Zap"}
         </span>
       </div>
     </ZapDialog>

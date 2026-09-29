@@ -31,45 +31,45 @@ Install all files from `.agents/skills/note-content/files/` into their matching 
 
 ### Core component & test
 
-| Skill file | Copy to |
-|---|---|
-| `files/components/NoteContent.tsx` | `src/components/NoteContent.tsx` |
+| Skill file                              | Copy to                               |
+| --------------------------------------- | ------------------------------------- |
+| `files/components/NoteContent.tsx`      | `src/components/NoteContent.tsx`      |
 | `files/components/NoteContent.test.tsx` | `src/components/NoteContent.test.tsx` |
 
 ### Library helpers
 
-| Skill file | Copy to |
-|---|---|
-| `files/lib/mediaUrls.ts` | `src/lib/mediaUrls.ts` |
-| `files/lib/sanitizeUrl.ts` | `src/lib/sanitizeUrl.ts` |
-| `files/lib/imeta.ts` | `src/lib/imeta.ts` |
-| `files/lib/customEmoji.ts` | `src/lib/customEmoji.ts` |
+| Skill file                    | Copy to                     |
+| ----------------------------- | --------------------------- |
+| `files/lib/mediaUrls.ts`      | `src/lib/mediaUrls.ts`      |
+| `files/lib/sanitizeUrl.ts`    | `src/lib/sanitizeUrl.ts`    |
+| `files/lib/imeta.ts`          | `src/lib/imeta.ts`          |
+| `files/lib/customEmoji.ts`    | `src/lib/customEmoji.ts`    |
 | `files/lib/getDisplayName.ts` | `src/lib/getDisplayName.ts` |
-| `files/lib/avatarShape.ts` | `src/lib/avatarShape.ts` |
-| `files/lib/countries.ts` | `src/lib/countries.ts` |
+| `files/lib/avatarShape.ts`    | `src/lib/avatarShape.ts`    |
+| `files/lib/countries.ts`      | `src/lib/countries.ts`      |
 
 ### Hooks
 
-| Skill file | Copy to |
-|---|---|
-| `files/hooks/useCustomEmojis.ts` | `src/hooks/useCustomEmojis.ts` |
+| Skill file                          | Copy to                           |
+| ----------------------------------- | --------------------------------- |
+| `files/hooks/useCustomEmojis.ts`    | `src/hooks/useCustomEmojis.ts`    |
 | `files/hooks/useBlossomFallback.ts` | `src/hooks/useBlossomFallback.ts` |
-| `files/hooks/useProfileUrl.ts` | `src/hooks/useProfileUrl.ts` |
+| `files/hooks/useProfileUrl.ts`      | `src/hooks/useProfileUrl.ts`      |
 
 ### Companion components (minimal stubs — replace with richer versions later)
 
-| Skill file | Copy to | Responsibility |
-|---|---|---|
-| `files/components/LinkEmbed.tsx` | `src/components/LinkEmbed.tsx` | Rich link preview card |
-| `files/components/EmbeddedNote.tsx` | `src/components/EmbeddedNote.tsx` | `note1` / `nevent1` quote card |
-| `files/components/EmbeddedNaddr.tsx` | `src/components/EmbeddedNaddr.tsx` | `naddr1` addressable-event card |
+| Skill file                                  | Copy to                                   | Responsibility                      |
+| ------------------------------------------- | ----------------------------------------- | ----------------------------------- |
+| `files/components/LinkEmbed.tsx`            | `src/components/LinkEmbed.tsx`            | Rich link preview card              |
+| `files/components/EmbeddedNote.tsx`         | `src/components/EmbeddedNote.tsx`         | `note1` / `nevent1` quote card      |
+| `files/components/EmbeddedNaddr.tsx`        | `src/components/EmbeddedNaddr.tsx`        | `naddr1` addressable-event card     |
 | `files/components/LightningInvoiceCard.tsx` | `src/components/LightningInvoiceCard.tsx` | BOLT11 invoice display / pay button |
-| `files/components/VideoPlayer.tsx` | `src/components/VideoPlayer.tsx` | Inline video |
-| `files/components/AudioVisualizer.tsx` | `src/components/AudioVisualizer.tsx` | Inline audio |
-| `files/components/WebxdcEmbed.tsx` | `src/components/WebxdcEmbed.tsx` | WebXDC app launcher |
-| `files/components/ImageGallery.tsx` | `src/components/ImageGallery.tsx` | Image grid + shared `Lightbox` |
-| `files/components/ProfileHoverCard.tsx` | `src/components/ProfileHoverCard.tsx` | Hover profile preview |
-| `files/components/CustomEmoji.tsx` | `src/components/CustomEmoji.tsx` | `CustomEmojiImg` + `EmojifiedText` |
+| `files/components/VideoPlayer.tsx`          | `src/components/VideoPlayer.tsx`          | Inline video                        |
+| `files/components/AudioVisualizer.tsx`      | `src/components/AudioVisualizer.tsx`      | Inline audio                        |
+| `files/components/WebxdcEmbed.tsx`          | `src/components/WebxdcEmbed.tsx`          | WebXDC app launcher                 |
+| `files/components/ImageGallery.tsx`         | `src/components/ImageGallery.tsx`         | Image grid + shared `Lightbox`      |
+| `files/components/ProfileHoverCard.tsx`     | `src/components/ProfileHoverCard.tsx`     | Hover profile preview               |
+| `files/components/CustomEmoji.tsx`          | `src/components/CustomEmoji.tsx`          | `CustomEmojiImg` + `EmojifiedText`  |
 
 The companion component stubs are **functional** — they render something sensible for every embed type — but deliberately minimal. Read the comment at the top of each file for notes on how to replace them with production-grade versions (OpenGraph scrapers, blurhash placeholders, WebLN-backed invoice payment, etc.).
 
@@ -92,20 +92,20 @@ Copy every file listed in the tables above from `.agents/skills/note-content/fil
 
 `NoteContent` generates links that assume these routes exist in `AppRouter.tsx`:
 
-| Generated link | Route expected |
-|---|---|
-| `/<nip19-identifier>` (e.g. `/npub1…`, `/note1…`, `/nevent1…`, `/naddr1…`) | Handled by the template's `NIP19Page` at `/:nip19` |
-| `/t/<hashtag>` | **Not in the default template.** Add `<Route path="/t/:hashtag" element={<HashtagPage />} />` if you want hashtag pages. |
-| `/r/<encoded-wss-url>` | **Not in the default template.** Add `<Route path="/r/:relayUrl" element={<RelayPage />} />` if you want relay pages. |
-| `/i/iso3166:<CC>` | **Not in the default template.** Add `<Route path="/i/iso3166::code" element={<CountryPage />} />` if you want flag-emoji country pages. |
+| Generated link                                                             | Route expected                                                                                                                           |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `/<nip19-identifier>` (e.g. `/npub1…`, `/note1…`, `/nevent1…`, `/naddr1…`) | Handled by the template's `NIP19Page` at `/:nip19`                                                                                       |
+| `/t/<hashtag>`                                                             | **Not in the default template.** Add `<Route path="/t/:hashtag" element={<HashtagPage />} />` if you want hashtag pages.                 |
+| `/r/<encoded-wss-url>`                                                     | **Not in the default template.** Add `<Route path="/r/:relayUrl" element={<RelayPage />} />` if you want relay pages.                    |
+| `/i/iso3166:<CC>`                                                          | **Not in the default template.** Add `<Route path="/i/iso3166::code" element={<CountryPage />} />` if you want flag-emoji country pages. |
 
 Any unrouted link falls through to the 404 page — nothing breaks, but the affordance is inert.
 
 ## Usage
 
 ```tsx
-import { NoteContent } from '@/components/NoteContent';
-import type { NostrEvent } from 'nostr-tools';
+import { NoteContent } from "@/components/NoteContent";
+import type { NostrEvent } from "nostr-tools";
 
 function Post({ event }: { event: NostrEvent }) {
   return (
@@ -157,23 +157,23 @@ The stubs shipped here are deliberately minimal so the skill works immediately a
 
 ## Supported Content Patterns
 
-| Pattern in `event.content` | Rendered as |
-|---|---|
-| `https://example.com/...` | Inline link if mid-line, or `LinkEmbed` card if URL ends a line |
-| `https://…/image.jpg` (any `IMAGE_EXTS`) | Inline image; 2+ consecutive → `ImageGallery` |
-| `https://…/video.mp4` (any `VIDEO_EXTS`) | `VideoPlayer` |
-| `https://…/song.mp3` (any `AUDIO_EXTS`) | `AudioVisualizer` |
-| `https://…/app.xdc` | `WebxdcEmbed` |
-| `wss://relay…` | Internal `/r/<encoded>` link |
-| URL containing `naddr1…` | Paired URL + `EmbeddedNaddr` card |
-| `lightning:lnbc…` / `lnbc…` / `lntb…` / `lnbcrt…` / `lntbs…` | `LightningInvoiceCard` |
-| `nostr:npub1…` or `nostr:nprofile1…` or bare `npub1…` | `@DisplayName` mention link (through `ProfileHoverCard`) |
-| `nostr:note1…` / `nostr:nevent1…` or bare | `EmbeddedNote` card (relay/author hints pulled from event's `q` tags) |
-| `nostr:naddr1…` or bare | `EmbeddedNaddr` card |
-| `#hashtag` (Unicode letters OK) | Internal `/t/hashtag` link |
-| 🇺🇸 🇵🇱 🇧🇷 … | Internal `/i/iso3166:US` link |
-| `:custom_emoji:` (with matching `["emoji", …]` tag or viewer collection) | `CustomEmojiImg` |
-| Plain text | Rendered as-is with `whitespace-pre-wrap`, `dir="auto"` for RTL |
+| Pattern in `event.content`                                               | Rendered as                                                           |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| `https://example.com/...`                                                | Inline link if mid-line, or `LinkEmbed` card if URL ends a line       |
+| `https://…/image.jpg` (any `IMAGE_EXTS`)                                 | Inline image; 2+ consecutive → `ImageGallery`                         |
+| `https://…/video.mp4` (any `VIDEO_EXTS`)                                 | `VideoPlayer`                                                         |
+| `https://…/song.mp3` (any `AUDIO_EXTS`)                                  | `AudioVisualizer`                                                     |
+| `https://…/app.xdc`                                                      | `WebxdcEmbed`                                                         |
+| `wss://relay…`                                                           | Internal `/r/<encoded>` link                                          |
+| URL containing `naddr1…`                                                 | Paired URL + `EmbeddedNaddr` card                                     |
+| `lightning:lnbc…` / `lnbc…` / `lntb…` / `lnbcrt…` / `lntbs…`             | `LightningInvoiceCard`                                                |
+| `nostr:npub1…` or `nostr:nprofile1…` or bare `npub1…`                    | `@DisplayName` mention link (through `ProfileHoverCard`)              |
+| `nostr:note1…` / `nostr:nevent1…` or bare                                | `EmbeddedNote` card (relay/author hints pulled from event's `q` tags) |
+| `nostr:naddr1…` or bare                                                  | `EmbeddedNaddr` card                                                  |
+| `#hashtag` (Unicode letters OK)                                          | Internal `/t/hashtag` link                                            |
+| 🇺🇸 🇵🇱 🇧🇷 …                                                               | Internal `/i/iso3166:US` link                                         |
+| `:custom_emoji:` (with matching `["emoji", …]` tag or viewer collection) | `CustomEmojiImg`                                                      |
+| Plain text                                                               | Rendered as-is with `whitespace-pre-wrap`, `dir="auto"` for RTL       |
 
 ## Tests
 

@@ -5,7 +5,7 @@ description: Write Vitest unit tests for React components and hooks using the pr
 
 # Testing
 
-Load this skill when the user asks you to write a test, diagnose a bug with a test, or add coverage for a component/hook. Running the existing test script is a standing requirement (see `AGENTS.md` → *Validating Your Changes*) and doesn't require this skill.
+Load this skill when the user asks you to write a test, diagnose a bug with a test, or add coverage for a component/hook. Running the existing test script is a standing requirement (see `AGENTS.md` → _Validating Your Changes_) and doesn't require this skill.
 
 ## Policy: when to create new test files
 
@@ -35,15 +35,19 @@ If your component needs another browser API, extend `src/test/setup.ts` rather t
 Wrap rendered components in `TestApp` (`src/test/TestApp.tsx`) so all context providers — `UnheadProvider`, applesauce's `EventStoreProvider`, `AccountsProvider`, `ActionsProvider`, and `BrowserRouter` — are available. Each render gets isolated `EventStore`, `AccountManager`, and `ActionRunner` instances. Without `TestApp`, hooks like `use$`, `useEventStore`, `useActiveAccount`, `useTimeline`, or `useNavigate` will throw.
 
 ```tsx
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { TestApp } from '@/test/TestApp';
-import { MyComponent } from './MyComponent';
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { TestApp } from "@/test/TestApp";
+import { MyComponent } from "./MyComponent";
 
-describe('MyComponent', () => {
-  it('renders correctly', () => {
-    render(<TestApp><MyComponent /></TestApp>);
-    expect(screen.getByText('Expected text')).toBeInTheDocument();
+describe("MyComponent", () => {
+  it("renders correctly", () => {
+    render(
+      <TestApp>
+        <MyComponent />
+      </TestApp>,
+    );
+    expect(screen.getByText("Expected text")).toBeInTheDocument();
   });
 });
 ```
@@ -53,13 +57,13 @@ describe('MyComponent', () => {
 Use `renderHook` from `@testing-library/react` and pass `TestApp` as the `wrapper`:
 
 ```tsx
-import { describe, it, expect } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { TestApp } from '@/test/TestApp';
-import { useMyHook } from './useMyHook';
+import { describe, it, expect } from "vitest";
+import { renderHook, waitFor } from "@testing-library/react";
+import { TestApp } from "@/test/TestApp";
+import { useMyHook } from "./useMyHook";
 
-describe('useMyHook', () => {
-  it('returns expected data', async () => {
+describe("useMyHook", () => {
+  it("returns expected data", async () => {
     const { result } = renderHook(() => useMyHook(), { wrapper: TestApp });
     await waitFor(() => expect(result.current).toBeDefined());
     // For reactive hooks built on `use$`/`useTimeline`, seed data by adding

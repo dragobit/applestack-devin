@@ -1,5 +1,5 @@
 {
-  "name": "mkstack",
+  "name": "applestack-devin",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build -l error && cp dist/index.html dist/404.html && echo 'Project built successfully!'",
     "test": "tsc --noEmit && eslint && vitest run --reporter=dot --silent && vite build -l error && cp dist/index.html dist/404.html && echo 'All tests passed!'",
-    "format": "prettier -w ."
+    "format": "prettier -w .",
+    "deploy": "npm run build --silent && node scripts/deploy-nsite.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
@@ -66,6 +67,7 @@
     "eslint": "^10.2.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "fake-indexeddb": "^6.2.5",
     "globals": "^17.5.0",
     "jsdom": "^29.1.0",
     "prettier": "^3.8.1",

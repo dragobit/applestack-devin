@@ -13,12 +13,12 @@ This skill provides a complete commenting system using NIP-22 (kind 1111) commen
 
 All files live under `.agents/skills/nostr-comments/files/` and must be copied into `src/` preserving the directory structure:
 
-| Skill file | Copy to |
-|---|---|
-| `files/hooks/useComments.ts` | `src/hooks/useComments.ts` |
-| `files/hooks/usePostComment.ts` | `src/hooks/usePostComment.ts` |
-| `files/components/comments/Comment.tsx` | `src/components/comments/Comment.tsx` |
-| `files/components/comments/CommentForm.tsx` | `src/components/comments/CommentForm.tsx` |
+| Skill file                                      | Copy to                                       |
+| ----------------------------------------------- | --------------------------------------------- |
+| `files/hooks/useComments.ts`                    | `src/hooks/useComments.ts`                    |
+| `files/hooks/usePostComment.ts`                 | `src/hooks/usePostComment.ts`                 |
+| `files/components/comments/Comment.tsx`         | `src/components/comments/Comment.tsx`         |
+| `files/components/comments/CommentForm.tsx`     | `src/components/comments/CommentForm.tsx`     |
 | `files/components/comments/CommentsSection.tsx` | `src/components/comments/CommentsSection.tsx` |
 
 ## Setup Instructions
@@ -108,9 +108,7 @@ The `CommentsSection` component accepts the following props:
 The comments system supports commenting on external URLs, making it useful for web pages, articles, or any online content:
 
 ```tsx
-<CommentsSection
-  root={new URL("https://example.com/article")}
-/>
+<CommentsSection root={new URL("https://example.com/article")} />
 ```
 
 ## Commenting on Hashtags
@@ -137,9 +135,7 @@ NIP-73 defines a standard set of external content IDs. All NIP-73 identifiers (e
 
 ```tsx
 // ISBN must be without hyphens
-<CommentsSection
-  root={new URL("isbn:9780765382030")}
-/>
+<CommentsSection root={new URL("isbn:9780765382030")} />
 ```
 
 ### Podcasts
@@ -160,18 +156,14 @@ NIP-73 defines a standard set of external content IDs. All NIP-73 identifiers (e
 
 ```tsx
 // ISAN without version part
-<CommentsSection
-  root={new URL("isan:0000-0000-401A-0000-7")}
-/>
+<CommentsSection root={new URL("isan:0000-0000-401A-0000-7")} />
 ```
 
 ### Geohashes
 
 ```tsx
 // Geohash must be lowercase
-<CommentsSection
-  root={new URL("geo:ezs42e44yx96")}
-/>
+<CommentsSection root={new URL("geo:ezs42e44yx96")} />
 ```
 
 ### Countries (ISO 3166)
@@ -192,9 +184,7 @@ NIP-73 defines a standard set of external content IDs. All NIP-73 identifiers (e
 
 ```tsx
 // DOI must be lowercase
-<CommentsSection
-  root={new URL("doi:10.1000/xyz123")}
-/>
+<CommentsSection root={new URL("doi:10.1000/xyz123")} />
 ```
 
 ### Blockchain Transactions and Addresses

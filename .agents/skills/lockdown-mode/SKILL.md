@@ -28,37 +28,37 @@ This document is based on testing against **iOS 18.7 / Safari 26.4** on an iPhon
 
 These APIs are **completely unavailable** (return `undefined`, `null`, or throw) when Lockdown Mode is active.
 
-| API | Impact | Notes |
-|-----|--------|-------|
-| **IndexedDB** | Critical | `indexedDB` global is missing entirely. Any library that relies on IndexedDB for storage will fail (Dexie, idb, localForage with IndexedDB driver, etc.). |
-| **Service Workers** | High | `navigator.serviceWorker` is absent. No offline caching, no background sync, no push notifications via SW. |
-| **Cache API** | High | `caches` global is absent. Often used alongside Service Workers for offline strategies. |
-| **WebAssembly** | High | `WebAssembly` global is `undefined`. Libraries compiled to WASM (e.g. libsodium-wrappers, secp256k1-wasm, SQLite WASM) will not load. |
-| **Web Locks** | High | `navigator.locks` is absent. Cross-tab coordination patterns that depend on this will break silently. |
-| **WebRTC** | High | `RTCPeerConnection` is absent. No peer-to-peer audio/video/data channels. |
-| **WebGL / WebGL2** | Medium | All canvas `getContext('webgl'*)` calls return `null`. GPU-accelerated rendering, maps (Mapbox GL, deck.gl), and 3D are broken. |
-| **FileReader** | Medium | `FileReader` constructor is absent. Cannot read `Blob`/`File` objects client-side (e.g. image preview before upload). Use the `File` constructor + `URL.createObjectURL()` as a workaround for previews. |
-| **SharedArrayBuffer** | Medium | `SharedArrayBuffer` is `undefined`. May also require COOP/COEP headers on non-lockdown browsers, so this is often already unavailable. |
-| **Speech Synthesis** | Low | `window.speechSynthesis` is absent. Text-to-speech features won't work. |
-| **Notifications API** | Low | `Notification` is absent. Web push permission prompts won't appear. (Capacitor local notifications via the native plugin are unaffected.) |
-| **WebCodecs** | Low | `VideoDecoder` / `VideoEncoder` are absent (`AudioDecoder` remains). Low-level media processing is unavailable. |
-| **Gamepad API** | Low | `navigator.getGamepads` is absent. |
-| **OPFS** | Medium | `navigator.storage.getDirectory` method does not exist. The `navigator.storage` object is present but the Origin Private File System API is stripped. SQLite-over-OPFS and any other OPFS-based storage will fail. |
-| **Web Share API** | Low | `navigator.share` is absent. Use Capacitor's `@capacitor/share` plugin instead -- the native share sheet still works. |
+| API                   | Impact   | Notes                                                                                                                                                                                                              |
+| --------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **IndexedDB**         | Critical | `indexedDB` global is missing entirely. Any library that relies on IndexedDB for storage will fail (Dexie, idb, localForage with IndexedDB driver, etc.).                                                          |
+| **Service Workers**   | High     | `navigator.serviceWorker` is absent. No offline caching, no background sync, no push notifications via SW.                                                                                                         |
+| **Cache API**         | High     | `caches` global is absent. Often used alongside Service Workers for offline strategies.                                                                                                                            |
+| **WebAssembly**       | High     | `WebAssembly` global is `undefined`. Libraries compiled to WASM (e.g. libsodium-wrappers, secp256k1-wasm, SQLite WASM) will not load.                                                                              |
+| **Web Locks**         | High     | `navigator.locks` is absent. Cross-tab coordination patterns that depend on this will break silently.                                                                                                              |
+| **WebRTC**            | High     | `RTCPeerConnection` is absent. No peer-to-peer audio/video/data channels.                                                                                                                                          |
+| **WebGL / WebGL2**    | Medium   | All canvas `getContext('webgl'*)` calls return `null`. GPU-accelerated rendering, maps (Mapbox GL, deck.gl), and 3D are broken.                                                                                    |
+| **FileReader**        | Medium   | `FileReader` constructor is absent. Cannot read `Blob`/`File` objects client-side (e.g. image preview before upload). Use the `File` constructor + `URL.createObjectURL()` as a workaround for previews.           |
+| **SharedArrayBuffer** | Medium   | `SharedArrayBuffer` is `undefined`. May also require COOP/COEP headers on non-lockdown browsers, so this is often already unavailable.                                                                             |
+| **Speech Synthesis**  | Low      | `window.speechSynthesis` is absent. Text-to-speech features won't work.                                                                                                                                            |
+| **Notifications API** | Low      | `Notification` is absent. Web push permission prompts won't appear. (Capacitor local notifications via the native plugin are unaffected.)                                                                          |
+| **WebCodecs**         | Low      | `VideoDecoder` / `VideoEncoder` are absent (`AudioDecoder` remains). Low-level media processing is unavailable.                                                                                                    |
+| **Gamepad API**       | Low      | `navigator.getGamepads` is absent.                                                                                                                                                                                 |
+| **OPFS**              | Medium   | `navigator.storage.getDirectory` method does not exist. The `navigator.storage` object is present but the Origin Private File System API is stripped. SQLite-over-OPFS and any other OPFS-based storage will fail. |
+| **Web Share API**     | Low      | `navigator.share` is absent. Use Capacitor's `@capacitor/share` plugin instead -- the native share sheet still works.                                                                                              |
 
 ## Available APIs
 
 These APIs **still work** under Lockdown Mode and can be relied on.
 
-| API | Notes |
-|-----|-------|
-| **File constructor** | `new File(...)` works. You can create File/Blob objects. |
-| **FontFace API** | Dynamic font loading via `new FontFace()` succeeds. Remote font fetches may fail with a network error (data URIs rejected). |
-| **JIT compilation** | JavaScript JIT appears active (~110ms for 1M iterations). Performance is not interpreter-level degraded. |
-| **PDF viewer** | `navigator.pdfViewerEnabled` is `true`. Inline `<embed type="application/pdf">` works. |
-| **Cookies** | `navigator.cookieEnabled` is `true`. |
-| **Credential Management** | `navigator.credentials` is available. |
-| **localStorage / sessionStorage** | Standard Web Storage APIs remain functional. |
+| API                               | Notes                                                                                                                       |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **File constructor**              | `new File(...)` works. You can create File/Blob objects.                                                                    |
+| **FontFace API**                  | Dynamic font loading via `new FontFace()` succeeds. Remote font fetches may fail with a network error (data URIs rejected). |
+| **JIT compilation**               | JavaScript JIT appears active (~110ms for 1M iterations). Performance is not interpreter-level degraded.                    |
+| **PDF viewer**                    | `navigator.pdfViewerEnabled` is `true`. Inline `<embed type="application/pdf">` works.                                      |
+| **Cookies**                       | `navigator.cookieEnabled` is `true`.                                                                                        |
+| **Credential Management**         | `navigator.credentials` is available.                                                                                       |
+| **localStorage / sessionStorage** | Standard Web Storage APIs remain functional.                                                                                |
 
 ## Implications for This App
 
@@ -87,11 +87,11 @@ These APIs **still work** under Lockdown Mode and can be relied on.
 
 Several blocked web APIs have Capacitor plugin equivalents that bypass WKWebView restrictions entirely:
 
-| Blocked Web API | Capacitor Alternative |
-|---|---|
-| Web Share | `@capacitor/share` (already installed) |
-| Notifications | `@capacitor/local-notifications` (already installed) |
-| File downloads | `@capacitor/filesystem` + share (already implemented in `downloadFile.ts`) |
+| Blocked Web API | Capacitor Alternative                                                      |
+| --------------- | -------------------------------------------------------------------------- |
+| Web Share       | `@capacitor/share` (already installed)                                     |
+| Notifications   | `@capacitor/local-notifications` (already installed)                       |
+| File downloads  | `@capacitor/filesystem` + share (already implemented in `downloadFile.ts`) |
 
 ### Detection
 

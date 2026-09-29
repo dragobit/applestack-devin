@@ -37,7 +37,10 @@ function useEncryptedNote() {
   );
 
   // Decrypt a message from a sender (use the *other party's* pubkey).
-  const plaintext = await account.signer.nip44.decrypt(senderPubkey, ciphertext);
+  const plaintext = await account.signer.nip44.decrypt(
+    senderPubkey,
+    ciphertext,
+  );
 
   return plaintext;
 }
@@ -90,12 +93,20 @@ In React: `useEventModel(EncryptedContentModel, [event])`. Don't gate UI on a sy
 
 ```ts
 const ciphertext = await account.signer.nip44.encrypt(account.pubkey, draft);
-await publishEvent({ kind: 30078, content: ciphertext, tags: [["d", "my-draft"]] });
+await publishEvent({
+  kind: 30078,
+  content: ciphertext,
+  tags: [["d", "my-draft"]],
+});
 ```
 
 ### Decrypt an incoming DM (NIP-17 / NIP-59)
 
-For gift-wrapped DMs, you'll typically decrypt the outer wrap, then the inner seal, then read the rumor's content. Each decryption uses the *sender* of that specific layer as the peer pubkey. Applesauce's NIP-17 helpers/actions (`applesauce-actions`, `applesauce-common`) handle the full wrap/unwrap so the inner rumor reaches the store — see the gift-wrap example referenced in the applesauce encryption docs.
+For gift-wrapped DMs, you'll typically decrypt the outer wrap, then the inner seal, then read the rumor's content. Each decryption uses the _sender_ of that specific layer as the peer pubkey. Applesauce's NIP-17 helpers/actions (`applesauce-actions`, `applesauce-common`) handle the full wrap/unwrap so the inner rumor reaches the store — see the gift-wrap example referenced in the applesauce encryption docs.
+
+### Verifying gift wraps
+
+Gift-wrap outer signatures (kinds 1059 / 21059) are redundant on the client — the wrap is signed by an ephemeral or group-shared key that authenticates nothing user-visible — so `src/services/nostr.ts` skips the Schnorr verify for them in `eventStore.verifyEvent`. **The event id must still be validated** (`event.id === getEventHash(event)`): it's the hash the store indexes and dedupes on, so skipping it entirely would let a relay poison the store under any id. If you build a custom ingest path for gift wraps, keep that same rule — cheap hash check always, expensive Schnorr verify only for kinds where the signature means something.
 
 ### Guarding the UI
 

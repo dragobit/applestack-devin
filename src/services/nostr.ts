@@ -9,7 +9,7 @@ import {
 import { RelayPool } from "applesauce-relay";
 import { NostrConnectSigner } from "applesauce-signers";
 import type { NostrEvent } from "nostr-tools";
-import { verifyEvent } from "nostr-tools";
+import { getEventHash, verifyEvent } from "nostr-tools";
 import { cacheRequest, saveEvents } from "./cache";
 import { extraRelays, lookupRelays } from "./settings";
 
@@ -23,8 +23,18 @@ export const eventStore = new EventStore({
   keepOldVersions: false, // Only keep latest version of replaceable events
 });
 
-// Verify events when they are added to the store
-eventStore.verifyEvent = verifyEvent;
+// Verify events when they are added to the store.
+// Gift-wrap (1059/21059) outer signatures are redundant on the client
+// (ephemeral or group-shared key), so skip the Schnorr verify for them.
+// The event id (content hash) must still be validated so that the id we
+// index/dedupe on actually matches the event's contents; only the
+// signature check is redundant. Verify everything else in full.
+eventStore.verifyEvent = (event: NostrEvent): boolean => {
+  if (event.kind === 1059 || event.kind === 21059) {
+    return event.id === getEventHash(event);
+  }
+  return verifyEvent(event);
+};
 
 // Persist events to the local nostrdb
 persistEventsToCache(eventStore, saveEvents);

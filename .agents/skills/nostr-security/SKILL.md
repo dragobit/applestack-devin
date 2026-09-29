@@ -27,11 +27,13 @@ Any URL from event tags, `content`, metadata fields (`picture`, `banner`, `websi
 
 ```ts
 /** Returns canonical href for valid https:// URLs, undefined otherwise. */
-export function sanitizeUrl(value: string | undefined | null): string | undefined {
+export function sanitizeUrl(
+  value: string | undefined | null,
+): string | undefined {
   if (!value) return undefined;
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' ? url.href : undefined;
+    return url.protocol === "https:" ? url.href : undefined;
   } catch {
     return undefined;
   }
@@ -52,7 +54,7 @@ function parseProfile(event: NostrEvent): Profile {
 }
 ```
 
-**When sanitization is NOT required:** URLs matched by a regex that constrains the protocol (e.g. a content tokenizer matching `https?://...` — the regex *is* the sanitizer), hardcoded/app-generated URLs, and strings rendered as plain text that never land in an attribute, CSS value, or network request.
+**When sanitization is NOT required:** URLs matched by a regex that constrains the protocol (e.g. a content tokenizer matching `https?://...` — the regex _is_ the sanitizer), hardcoded/app-generated URLs, and strings rendered as plain text that never land in an attribute, CSS value, or network request.
 
 ## 2. CSS injection
 
@@ -68,7 +70,7 @@ Common surfaces: `background-image: url("${url}")`, `font-family: "${family}"`, 
 ```ts
 /** Keeps Unicode letters/numbers, spaces, hyphens, underscores, apostrophes, periods. */
 export function sanitizeCssString(value: string): string {
-  return value.replace(/[^\p{L}\p{N} _\-'.]/gu, '');
+  return value.replace(/[^\p{L}\p{N} _\-'.]/gu, "");
 }
 ```
 
@@ -78,7 +80,7 @@ style.textContent = `body { background-image: url("${rawUrl}"); font-family: "${
 
 // ✅ SAFE — validate URLs, allowlist identifiers
 const bgUrl = sanitizeUrl(rawUrl);
-const family = sanitizeCssString(rawFamily ?? '');
+const family = sanitizeCssString(rawFamily ?? "");
 if (bgUrl && family) {
   style.textContent = `body { background-image: url("${bgUrl}"); font-family: "${family}"; }`;
 }
@@ -122,33 +124,44 @@ The trust boundary is the **filter** — specifically the `authors` constraint �
 Kind 4550 approvals are only trustworthy if signed by a moderator from the community definition (kind 34550). Two-step query:
 
 ```ts
-import { pool } from '@/services/nostr';
-import { extraRelays } from '@/services/settings';
-import { lastValueFrom, toArray } from 'rxjs';
+import { pool } from "@/services/nostr";
+import { extraRelays } from "@/services/settings";
+import { lastValueFrom, toArray } from "rxjs";
 
 const relays = extraRelays.getValue();
 
 // 1. Fetch community definition — author-filter by the owner.
 const [community] = await lastValueFrom(
-  pool.request(relays, [{
-    kinds: [34550], authors: [communityOwnerPubkey], '#d': [communityId], limit: 1,
-  }]).pipe(toArray()),
+  pool
+    .request(relays, [
+      {
+        kinds: [34550],
+        authors: [communityOwnerPubkey],
+        "#d": [communityId],
+        limit: 1,
+      },
+    ])
+    .pipe(toArray()),
 );
 if (!community) return [];
 
 // 2. Extract moderator pubkeys from `p` tags with role "moderator".
 const moderators = community.tags
-  .filter(([n, , , role]) => n === 'p' && role === 'moderator')
+  .filter(([n, , , role]) => n === "p" && role === "moderator")
   .map(([, pubkey]) => pubkey);
 
 // 3. Query approvals — only from moderators.
 const approvals = await lastValueFrom(
-  pool.request(relays, [{
-    kinds: [4550],
-    authors: moderators,
-    '#a': [`34550:${communityOwnerPubkey}:${communityId}`],
-    limit: 100,
-  }]).pipe(toArray()),
+  pool
+    .request(relays, [
+      {
+        kinds: [4550],
+        authors: moderators,
+        "#a": [`34550:${communityOwnerPubkey}:${communityId}`],
+        limit: 100,
+      },
+    ])
+    .pipe(toArray()),
 );
 ```
 

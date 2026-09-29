@@ -11,8 +11,8 @@ This skill provides `EditProfileForm`, a drop-in React component that lets a log
 
 ## Files Provided by This Skill
 
-| Skill file | Copy to |
-|---|---|
+| Skill file                             | Copy to                              |
+| -------------------------------------- | ------------------------------------ |
 | `files/components/EditProfileForm.tsx` | `src/components/EditProfileForm.tsx` |
 
 ## Setup Instructions
@@ -45,7 +45,7 @@ All of these are standard in the template; no extra work is needed beyond copyin
 Place the component anywhere a logged-in user should be able to edit their profile. It renders the form itself, including its own container layout and a live preview:
 
 ```tsx
-import { EditProfileForm } from '@/components/EditProfileForm';
+import { EditProfileForm } from "@/components/EditProfileForm";
 
 export default function EditProfilePage() {
   return <EditProfileForm />;
@@ -56,19 +56,19 @@ The component takes no props. It reads the current user's existing metadata via 
 
 ## Fields
 
-| Field | NIP-01 key | Input | Notes |
-|---|---|---|---|
-| Display Name | `display_name` | text | Shown as the large title in the preview |
-| Name | `name` | text | Short handle |
-| About | `about` | textarea | Bio / description |
-| Picture | `picture` | URL | Profile avatar; validated as a URL |
-| Banner | `banner` | URL | Profile banner; validated as a URL |
-| Website | `website` | URL | Any related web URL |
-| NIP-05 | `nip05` | text | Email-like Nostr identifier (e.g. `alice@example.com`) |
-| Lightning (LUD-16) | `lud16` | email | Lightning address |
-| Lightning (LUD-06) | `lud06` | email | LNURL-pay address |
-| Bot | `bot` | checkbox | Marks the account as automated |
-| Languages | `languages` | comma-separated text | Stored as a string array |
+| Field              | NIP-01 key     | Input                | Notes                                                  |
+| ------------------ | -------------- | -------------------- | ------------------------------------------------------ |
+| Display Name       | `display_name` | text                 | Shown as the large title in the preview                |
+| Name               | `name`         | text                 | Short handle                                           |
+| About              | `about`        | textarea             | Bio / description                                      |
+| Picture            | `picture`      | URL                  | Profile avatar; validated as a URL                     |
+| Banner             | `banner`       | URL                  | Profile banner; validated as a URL                     |
+| Website            | `website`      | URL                  | Any related web URL                                    |
+| NIP-05             | `nip05`        | text                 | Email-like Nostr identifier (e.g. `alice@example.com`) |
+| Lightning (LUD-16) | `lud16`        | email                | Lightning address                                      |
+| Lightning (LUD-06) | `lud06`        | email                | LNURL-pay address                                      |
+| Bot                | `bot`          | checkbox             | Marks the account as automated                         |
+| Languages          | `languages`    | comma-separated text | Stored as a string array                               |
 
 Validation is enforced by a local `zod` schema (`zodResolver`); URL fields must be valid URLs and lightning fields must look like email addresses. Empty fields are stripped before publishing.
 
@@ -77,7 +77,7 @@ Validation is enforced by a local `zod` schema (`zodResolver`); URL fields must 
 On submit, the form builds a `Partial<ProfileContent>` from the non-empty fields and calls:
 
 ```ts
-import { runner, Actions } from '@/services/actions';
+import { runner, Actions } from "@/services/actions";
 
 await runner.run(Actions.UpdateProfile, profileUpdate);
 ```
@@ -90,14 +90,14 @@ The form is just a component. If you want a dedicated route for it, wire it up i
 
 ```tsx
 // AppRouter.tsx
-import EditProfilePage from './pages/EditProfilePage';
+import EditProfilePage from "./pages/EditProfilePage";
 
-<Route path="/settings/profile" element={<EditProfilePage />} />
+<Route path="/settings/profile" element={<EditProfilePage />} />;
 ```
 
 ## Related Hooks
 
-If you're building a profile page that *displays* metadata (as opposed to editing it), use:
+If you're building a profile page that _displays_ metadata (as opposed to editing it), use:
 
 - `useMyProfile()` — the logged-in user's profile metadata
 - `useProfile(pubkey)` — any user's metadata by pubkey

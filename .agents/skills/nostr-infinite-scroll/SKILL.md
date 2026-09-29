@@ -13,13 +13,13 @@ This is a two-part pattern:
 2. **Load older pages** by calling the timeline loader. Each call continues from where the previous one stopped; subscribe to the returned cold observable to fire the request.
 
 ```typescript
-import { useCallback, useMemo, useState } from 'react';
-import { use$ } from '@/hooks/use$';
-import { useEventStore } from '@/hooks/useEventStore';
-import { createTimelineLoader } from 'applesauce-loaders/loaders';
-import { pool, eventStore } from '@/services/nostr';
-import { extraRelays } from '@/services/settings';
-import type { Filter } from 'applesauce-core/helpers';
+import { useCallback, useMemo, useState } from "react";
+import { use$ } from "@/hooks/use$";
+import { useEventStore } from "@/hooks/useEventStore";
+import { createTimelineLoader } from "applesauce-loaders/loaders";
+import { pool, eventStore } from "@/services/nostr";
+import { extraRelays } from "@/services/settings";
+import type { Filter } from "applesauce-core/helpers";
 
 export function useGlobalFeed(filters: Filter[] = [{ kinds: [1] }]) {
   const store = useEventStore();
@@ -30,14 +30,12 @@ export function useGlobalFeed(filters: Filter[] = [{ kinds: [1] }]) {
 
   // Reactive view of everything matching the filters that's in the store.
   // Emits a fresh, deduplicated, newest-first array on every change.
-  const events = use$(
-    () => store.timeline(filters),
-    [store, filterKey],
-  );
+  const events = use$(() => store.timeline(filters), [store, filterKey]);
 
   // One timeline loader instance, recreated only when relays/filters change.
   const loader = useMemo(
-    () => createTimelineLoader(pool, relays, filters, { limit: 20, eventStore }),
+    () =>
+      createTimelineLoader(pool, relays, filters, { limit: 20, eventStore }),
     [relays, filterKey],
   );
 
@@ -61,10 +59,10 @@ export function useGlobalFeed(filters: Filter[] = [{ kinds: [1] }]) {
 Example usage with an intersection observer for automatic loading:
 
 ```tsx
-import { useEffect } from 'react';
-import { useInView } from 'react-intersection-observer';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useGlobalFeed } from '@/hooks/useGlobalFeed';
+import { useEffect } from "react";
+import { useInView } from "react-intersection-observer";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useGlobalFeed } from "@/hooks/useGlobalFeed";
 
 function GlobalFeed() {
   const { events, loadMore, loading } = useGlobalFeed([{ kinds: [1] }]);

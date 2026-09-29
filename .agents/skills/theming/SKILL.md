@@ -5,37 +5,35 @@ description: Customize the app's visual design — install Google Fonts via @fon
 
 # Theming, Fonts, and Color Schemes
 
-Use this skill when the user wants to change fonts, colors, light/dark appearance, or general visual styling. The template ships with a complete light/dark theme system built on CSS custom properties and Tailwind, plus a `useTheme` hook for runtime switching.
+Use this skill when the user wants to change fonts, colors, light/dark appearance, or general visual styling. The template ships with a complete light/dark theme system built on CSS custom properties and Tailwind v4 (CSS-first config — there is **no `tailwind.config.ts`**), plus a persisted `theme` setting for runtime switching.
 
 ## Adding Fonts
 
 Any Google Font can be installed via the `@fontsource` / `@fontsource-variable` packages.
 
 1. **Install the font package.** Prefer the variable version when available.
+
    ```bash
    npm install @fontsource-variable/inter
    ```
+
    Package naming:
    - `@fontsource-variable/<font-name>` — variable fonts (preferred; one file, all weights)
    - `@fontsource/<font-name>` — static fonts
 
 2. **Import the font once** in `src/main.tsx`:
+
    ```ts
-   import '@fontsource-variable/inter';
+   import "@fontsource-variable/inter";
    ```
 
-3. **Register the family** in `tailwind.config.ts`:
-   ```ts
-   export default {
-     theme: {
-       extend: {
-         fontFamily: {
-           sans: ['Inter Variable', 'Inter', 'system-ui', 'sans-serif'],
-         },
-       },
-     },
-   };
+3. **Register the family** in the `@theme` block of `src/index.css` (Tailwind v4 is CSS-first):
+   ```css
+   @theme {
+     --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+   }
    ```
+   This makes `font-sans` (and the default body font) resolve to the new family.
 
 ### Suggested families by use case
 
@@ -44,7 +42,7 @@ Any Google Font can be installed via the `@fontsource` / `@fontsource-variable` 
 - **Creative / Artistic:** Poppins, Nunito, Comfortaa
 - **Monospace / Code:** JetBrains Mono, Fira Code, Source Code Pro
 
-For expressive hierarchies, pair a sans body font with a display/serif heading font (e.g. Inter + Playfair Display) and expose the second family as `fontFamily.serif` or `fontFamily.display` in Tailwind.
+For expressive hierarchies, pair a sans body font with a display/serif heading font (e.g. Inter + Playfair Display) and expose the second family as another `@theme` token (e.g. `--font-serif` or `--font-display`), which Tailwind turns into a `font-serif` / `font-display` utility.
 
 ## Color Schemes
 
@@ -53,11 +51,13 @@ Colors are defined as CSS custom properties in `src/index.css` under two selecto
 - `:root` — light-mode values
 - `.dark` — dark-mode overrides
 
+Each variable is a full color value wrapped in `hsl(...)`, e.g. `--primary: hsl(222.2 47.4% 11.2%);`. The `@theme inline` block maps each `--<token>` to its `--color-<token>` utility, so you don't edit it when only changing values.
+
 When the user requests a new color scheme:
 
-1. **Update both `:root` and `.dark`** in `src/index.css`. Each variable is an HSL triplet (no `hsl()` wrapper), e.g. `--primary: 222 47% 11%;`.
+1. **Update both `:root` and `.dark`** in `src/index.css`.
 2. **Keep contrast ratios ≥ 4.5:1** for body text and interactive elements. Test both modes.
-3. **Prefer extending Tailwind's palette** (`tailwind.config.ts`) over hard-coding hex values in components — this keeps the theme consistent and dark-mode-friendly.
+3. **Add new color tokens** under the `@theme inline` block in `src/index.css`. Define the raw value as a `--<token>` on `:root`/`.dark`, then expose it as `--color-<token>: var(--<token>);` inside `@theme inline`.
 4. **Apply colors through semantic tokens** (`bg-primary`, `text-muted-foreground`, `border-input`) rather than raw palette names when possible, so future theme changes propagate.
 
 The shadcn/ui components already consume these semantic tokens, so changing the variables automatically restyles the entire component library.
@@ -66,26 +66,31 @@ The shadcn/ui components already consume these semantic tokens, so changing the 
 
 The template includes:
 
-- **`useTheme` hook** (`src/hooks/useTheme.ts`) — read and set the current theme programmatically.
-- **CSS custom properties** in `src/index.css` — one set in `:root`, dark overrides in `.dark`.
-- **Automatic persistence** via the `AppContext` config (`config.theme`), which is saved to local storage.
+- **`theme` BehaviorSubject** (`src/services/settings.ts`) — a tri-state `Theme = "light" | "dark" | "system"` persisted to `localStorage` via the `persist()` helper. `"system"` (the default) follows `prefers-color-scheme`.
+- **`ThemeSync`** (`src/App.tsx`) — a component that subscribes to `theme` and toggles the `dark` class on `document.documentElement`, also re-applying when the OS preference changes in `"system"` mode.
+- **CSS custom properties** in `src/index.css` — one set in `:root`, dark overrides in `.dark`, activated by the `@custom-variant dark (&:is(.dark *));` declaration so `dark:` utilities work.
 
-To add a theme toggle:
+Read the current theme in a component with `use$` from `@/hooks/use$`; set it by calling `theme.next(...)`. To add a theme toggle:
 
 ```tsx
-import { useTheme } from '@/hooks/useTheme';
-import { Button } from '@/components/ui/button';
-import { Moon, Sun } from 'lucide-react';
+import { use$ } from "@/hooks/use$";
+import { theme } from "@/services/settings";
+import { Button } from "@/components/ui/button";
+import { Moon, Sun } from "lucide-react";
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const current = use$(theme);
+  const dark =
+    current === "dark" ||
+    (current === "system" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      onClick={() => theme.next(dark ? "light" : "dark")}
     >
-      {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </Button>
   );
 }

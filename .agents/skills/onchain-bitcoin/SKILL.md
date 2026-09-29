@@ -17,11 +17,11 @@ This skill ships a complete in-app wallet:
 
 ## Why It Works
 
-| Property | Nostr | Bitcoin Taproot |
-|---|---|---|
-| Curve | secp256k1 | secp256k1 |
-| Signature scheme | Schnorr (BIP-340) | Schnorr (BIP-340) |
-| Public key format | 32-byte x-only | 32-byte x-only |
+| Property          | Nostr             | Bitcoin Taproot   |
+| ----------------- | ----------------- | ----------------- |
+| Curve             | secp256k1         | secp256k1         |
+| Signature scheme  | Schnorr (BIP-340) | Schnorr (BIP-340) |
+| Public key format | 32-byte x-only    | 32-byte x-only    |
 
 Because the formats match, a Nostr pubkey **is** a Taproot internal key (`P`). The on-chain output key is the standard BIP-341 tweak `Q = P + taggedHash("TapTweak", P) · G` with no script tree (key-path-only spend), encoded as bech32m with HRP `bc` and witness version 1 — always producing a `bc1p…` address.
 
@@ -29,17 +29,17 @@ Because the formats match, a Nostr pubkey **is** a Taproot internal key (`P`). T
 
 ## Files Provided by This Skill
 
-| Skill file | Copy to |
-|---|---|
-| `files/lib/bitcoin.ts` | `src/lib/bitcoin.ts` |
-| `files/lib/bitcoin-signers.ts` | `src/lib/bitcoin-signers.ts` |
-| `files/hooks/useBitcoinWallet.ts` | `src/hooks/useBitcoinWallet.ts` |
+| Skill file                         | Copy to                          |
+| ---------------------------------- | -------------------------------- |
+| `files/lib/bitcoin.ts`             | `src/lib/bitcoin.ts`             |
+| `files/lib/bitcoin-signers.ts`     | `src/lib/bitcoin-signers.ts`     |
+| `files/hooks/useBitcoinWallet.ts`  | `src/hooks/useBitcoinWallet.ts`  |
 | `files/hooks/useBitcoinAddress.ts` | `src/hooks/useBitcoinAddress.ts` |
-| `files/hooks/useBitcoinTx.ts` | `src/hooks/useBitcoinTx.ts` |
-| `files/hooks/usePolledFetch.ts` | `src/hooks/usePolledFetch.ts` |
-| `files/hooks/useBitcoinSigner.ts` | `src/hooks/useBitcoinSigner.ts` |
-| `files/hooks/useOnchainZap.ts` | `src/hooks/useOnchainZap.ts` |
-| `files/hooks/useOnchainZaps.ts` | `src/hooks/useOnchainZaps.ts` |
+| `files/hooks/useBitcoinTx.ts`      | `src/hooks/useBitcoinTx.ts`      |
+| `files/hooks/usePolledFetch.ts`    | `src/hooks/usePolledFetch.ts`    |
+| `files/hooks/useBitcoinSigner.ts`  | `src/hooks/useBitcoinSigner.ts`  |
+| `files/hooks/useOnchainZap.ts`     | `src/hooks/useOnchainZap.ts`     |
+| `files/hooks/useOnchainZaps.ts`    | `src/hooks/useOnchainZaps.ts`    |
 
 These files are framework-only. The wallet page, send dialog, and on-chain zap UI are built on top of them.
 
@@ -53,12 +53,12 @@ npm install bitcoinjs-lib @bitcoinerlab/secp256k1 ecpair tiny-secp256k1
 
 `buffer` is already a dependency of the template; if you removed it, also `npm install buffer`.
 
-| Package | Role |
-|---|---|
-| `bitcoinjs-lib` | P2TR address derivation, PSBT construction & finalization |
-| `@bitcoinerlab/secp256k1` | secp256k1 ECC backend (Schnorr, key tweaking) |
-| `ecpair` | Key pair creation and BIP-341 tweaking for local nsec signing |
-| `tiny-secp256k1` | Peer dep of `ecpair` (low-level ECC) |
+| Package                   | Role                                                          |
+| ------------------------- | ------------------------------------------------------------- |
+| `bitcoinjs-lib`           | P2TR address derivation, PSBT construction & finalization     |
+| `@bitcoinerlab/secp256k1` | secp256k1 ECC backend (Schnorr, key tweaking)                 |
+| `ecpair`                  | Key pair creation and BIP-341 tweaking for local nsec signing |
+| `tiny-secp256k1`          | Peer dep of `ecpair` (low-level ECC)                          |
 
 ### 2. Initialize ECC in `main.tsx`
 
@@ -66,24 +66,24 @@ The Buffer polyfill is already imported in mkstack's `main.tsx`. Add the ECC ini
 
 ```tsx
 // src/main.tsx
-import { createRoot } from 'react-dom/client';
+import { createRoot } from "react-dom/client";
 
 // Import polyfills first (Buffer must exist before bitcoinjs-lib is loaded)
-import './lib/polyfills.ts';
+import "./lib/polyfills.ts";
 
 // Initialize ECC for bitcoinjs-lib (Taproot / Schnorr support)
-import * as bitcoin from 'bitcoinjs-lib';
-import * as ecc from '@bitcoinerlab/secp256k1';
+import * as bitcoin from "bitcoinjs-lib";
+import * as ecc from "@bitcoinerlab/secp256k1";
 bitcoin.initEccLib(ecc);
 
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import App from './App.tsx';
-import './index.css';
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import App from "./App.tsx";
+import "./index.css";
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
     <App />
-  </ErrorBoundary>
+  </ErrorBoundary>,
 );
 ```
 
@@ -97,11 +97,11 @@ Copy every file from `files/` into the matching directory under `src/`. The hook
 
 Unlike the Nostrify version, **this port requires no changes to login/account wiring**. Applesauce constructs the active account's signer internally in `src/hooks/useLoginActions.ts` (`PrivateKeySigner`, `ExtensionSigner`, `NostrConnectSigner`), so we cannot subclass it. Instead `@/lib/bitcoin-signers` exposes `signPsbtWithAccount(account, psbtHex)`, which dispatches on the active `IAccount`'s `type`:
 
-| `account.type` | Signer | PSBT path |
-|---|---|---|
-| `"nsec"` | `PrivateKeySigner` | Reads the public `signer.key: Uint8Array`, applies the BIP-341 TapTweak, and signs locally (`signPsbtLocal`). |
-| `"extension"` | `ExtensionSigner` | Calls `window.nostr.signPsbt()` (NIP-07). |
-| `"nostr-connect"` | `NostrConnectSigner` | Sends a `sign_psbt` RPC via `signer.makeRequest('sign_psbt', [psbtHex])` (NIP-46). |
+| `account.type`    | Signer               | PSBT path                                                                                                     |
+| ----------------- | -------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `"nsec"`          | `PrivateKeySigner`   | Reads the public `signer.key: Uint8Array`, applies the BIP-341 TapTweak, and signs locally (`signPsbtLocal`). |
+| `"extension"`     | `ExtensionSigner`    | Calls `window.nostr.signPsbt()` (NIP-07).                                                                     |
+| `"nostr-connect"` | `NostrConnectSigner` | Sends a `sign_psbt` RPC via `signer.makeRequest('sign_psbt', [psbtHex])` (NIP-46).                            |
 
 `useBitcoinSigner()` reads the active account via `useActiveAccount()` and returns a bound `signPsbt(psbtHex)` plus a capability state. **No edits to any existing repo file are required** — just copy the skill files in.
 
@@ -116,10 +116,13 @@ This port does **not** use `@tanstack/react-query`. Nostr data comes through app
 ### Address derivation
 
 ```ts
-import { nostrPubkeyToBitcoinAddress, npubToBitcoinAddress } from '@/lib/bitcoin';
+import {
+  nostrPubkeyToBitcoinAddress,
+  npubToBitcoinAddress,
+} from "@/lib/bitcoin";
 
-nostrPubkeyToBitcoinAddress('d6889cb0…300a961d');  // 'bc1p2wsldez…'
-npubToBitcoinAddress('npub1…');                    // 'bc1p…'
+nostrPubkeyToBitcoinAddress("d6889cb0…300a961d"); // 'bc1p2wsldez…'
+npubToBitcoinAddress("npub1…"); // 'bc1p…'
 ```
 
 Both return `''` for malformed input or off-curve pubkeys (so UIs can render an empty state without try/catch).
@@ -127,18 +130,21 @@ Both return `''` for malformed input or off-curve pubkeys (so UIs can render an 
 ### `useBitcoinWallet()` — current user's wallet
 
 ```tsx
-import { useBitcoinWallet } from '@/hooks/useBitcoinWallet';
-import { satsToUSD, formatBTC } from '@/lib/bitcoin';
+import { useBitcoinWallet } from "@/hooks/useBitcoinWallet";
+import { satsToUSD, formatBTC } from "@/lib/bitcoin";
 
 function WalletWidget() {
-  const { bitcoinAddress, addressData, btcPrice, transactions, isLoading } = useBitcoinWallet();
+  const { bitcoinAddress, addressData, btcPrice, transactions, isLoading } =
+    useBitcoinWallet();
 
   if (isLoading) return <Skeleton className="h-10 w-40" />;
   if (!addressData) return null;
 
   return (
     <div>
-      <div>{btcPrice ? satsToUSD(addressData.totalBalance, btcPrice) : '—'}</div>
+      <div>
+        {btcPrice ? satsToUSD(addressData.totalBalance, btcPrice) : "—"}
+      </div>
       <div>{formatBTC(addressData.totalBalance)} BTC</div>
       <code>{bitcoinAddress}</code>
     </div>
@@ -155,7 +161,7 @@ Use these from the `/:nip19` router (`src/pages/NIP19Page.tsx`) when an `i` tag 
 Parse NIP-73 Bitcoin identifiers with this regex:
 
 ```ts
-const txMatch  = uri.match(/^bitcoin:tx:([0-9a-f]{64})$/i);
+const txMatch = uri.match(/^bitcoin:tx:([0-9a-f]{64})$/i);
 const addrMatch = uri.match(/^bitcoin:address:(.+)$/);
 ```
 
@@ -170,17 +176,21 @@ import {
   broadcastTransaction,
   fetchUTXOs,
   getFeeRates,
-} from '@/lib/bitcoin';
-import { useBitcoinSigner } from '@/hooks/useBitcoinSigner';
-import { useActiveAccount } from 'applesauce-react/hooks';
+} from "@/lib/bitcoin";
+import { useBitcoinSigner } from "@/hooks/useBitcoinSigner";
+import { useActiveAccount } from "applesauce-react/hooks";
 
 const account = useActiveAccount();
 const { signPsbt, canSignPsbt } = useBitcoinSigner();
 
-if (!canSignPsbt || !signPsbt || !account) throw new Error("Login can't sign PSBTs.");
+if (!canSignPsbt || !signPsbt || !account)
+  throw new Error("Login can't sign PSBTs.");
 
 const senderAddress = nostrPubkeyToBitcoinAddress(account.pubkey);
-const [utxos, rates] = await Promise.all([fetchUTXOs(senderAddress), getFeeRates()]);
+const [utxos, rates] = await Promise.all([
+  fetchUTXOs(senderAddress),
+  getFeeRates(),
+]);
 
 // 1. Build (no key material required — pubkey only)
 const { psbtHex, fee } = buildUnsignedPsbt(
@@ -205,6 +215,17 @@ Key facts about `buildUnsignedPsbt`:
 - Fee uses `ceil((numInputs · 57.5 + numOutputs · 43 + 10.5) · feeRate)`.
 - Change is added back to the sender's own Taproot address **only** if it's ≥ 546 sats (dust limit). Below dust, change is donated to fees and the tx has 1 output instead of 2.
 - Throws `Insufficient funds` if `amount + fee > total UTXO value`.
+- Throws `Invalid fee rate` if `feeRate` is not a finite number ≥ 1.
+
+That last guard is load-bearing. A `NaN` fee rate produces a `NaN` fee, and
+every check downstream of the fee — the dust comparison, the balance check, the
+"is there a fee to show" check in the UI — is a `<` or `>=` comparison, and
+_every_ comparison with NaN is false. So NaN doesn't fail: it silently skips the
+change output, passes the balance check, renders as "Fee 0", and builds a
+perfectly valid transaction that pays the wallet's entire balance to miners.
+`getFeeRates` sanitizes the remote response for the same reason — the old
+`Math.ceil(data['1'] || 1)` caught a _missing_ key but turned a truthy
+non-number like `{"1": "5"}` into NaN.
 
 For send-max, use `maxSendable(totalBalance, numInputs, feeRate)` — it correctly subtracts a 1-output fee.
 
@@ -212,10 +233,10 @@ For send-max, use `maxSendable(totalBalance, numInputs, feeRate)` — it correct
 
 `useBitcoinSigner()` returns one of three states for the active login:
 
-| Login | Capability |
-|---|---|
-| **nsec** | Always `'supported'` — local signing with the private key. |
-| **NIP-07 extension** | Probes `window.nostr.signPsbt` (re-tries every 250 ms for up to 3 s). `'supported'`, `'unsupported'`, or `'unknown'` while the extension is still injecting. |
+| Login                      | Capability                                                                                                                                                                                                                                               |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **nsec**                   | Always `'supported'` — local signing with the private key.                                                                                                                                                                                               |
+| **NIP-07 extension**       | Probes `window.nostr.signPsbt` (re-tries every 250 ms for up to 3 s). `'supported'`, `'unsupported'`, or `'unknown'` while the extension is still injecting.                                                                                             |
 | **NIP-46 (nostr-connect)** | `'unknown'` initially (NIP-46 has no capability-discovery RPC). Flips to `'unsupported'` for the rest of the session once a `sign_psbt` call returns a "method not found"-style error — see `reportSignerUnsupported()` and `isSignerCapabilityError()`. |
 
 The send dialog should render an "unsupported" panel (with QR-code fallback for receiving funds) whenever `capability === 'unsupported'`, and let `'unknown'` users attempt the send. `useOnchainZap`'s error handler already calls `reportSignerUnsupported(account.pubkey)` automatically, so the second send attempt with the same bunker won't re-attempt.
@@ -243,14 +264,14 @@ A Bitcoin equivalent of NIP-57 Lightning zaps. Defined in this skill — the kin
 }
 ```
 
-| Tag | Required | Notes |
-|---|---|---|
-| `i` | Yes | NIP-73 identifier `bitcoin:tx:<txid>` (64-char lowercase hex). |
-| `p` | Yes | Recipient pubkey. |
-| `amount` | Yes | Sats paid to the recipient (may be capped by verifier). |
-| `e` | If zapping an event | Event being zapped. |
-| `a` | If zapping an addressable event (kind 30000–39999) | `<kind>:<pubkey>:<d-tag>`. |
-| `alt` | Yes | NIP-31 fallback. |
+| Tag      | Required                                           | Notes                                                          |
+| -------- | -------------------------------------------------- | -------------------------------------------------------------- |
+| `i`      | Yes                                                | NIP-73 identifier `bitcoin:tx:<txid>` (64-char lowercase hex). |
+| `p`      | Yes                                                | Recipient pubkey.                                              |
+| `amount` | Yes                                                | Sats paid to the recipient (may be capped by verifier).        |
+| `e`      | If zapping an event                                | Event being zapped.                                            |
+| `a`      | If zapping an addressable event (kind 30000–39999) | `<kind>:<pubkey>:<d-tag>`.                                     |
+| `alt`    | Yes                                                | NIP-31 fallback.                                               |
 
 If neither `e` nor `a` is present, the zap targets the recipient's profile.
 
@@ -259,7 +280,7 @@ If neither `e` nor `a` is present, the zap targets the recipient's profile.
 Builds + signs + broadcasts the Bitcoin transaction, then publishes the kind 8333 event:
 
 ```tsx
-import { useOnchainZap } from '@/hooks/useOnchainZap';
+import { useOnchainZap } from "@/hooks/useOnchainZap";
 
 function ZapButton({ target }: { target: NostrEvent }) {
   const { zap, isZapping, progress, canZap } = useOnchainZap(target);
@@ -269,9 +290,11 @@ function ZapButton({ target }: { target: NostrEvent }) {
   return (
     <button
       disabled={isZapping}
-      onClick={() => zap({ amountSats: 5000, comment: 'Great post!', feeSpeed: 'halfHour' })}
+      onClick={() =>
+        zap({ amountSats: 5000, comment: "Great post!", feeSpeed: "halfHour" })
+      }
     >
-      {isZapping ? `${progress}…` : 'Zap 5k sats'}
+      {isZapping ? `${progress}…` : "Zap 5k sats"}
     </button>
   );
 }
@@ -293,12 +316,16 @@ The `amount` tag is self-reported. **Always verify on-chain before counting it t
 Use `useOnchainZaps(target)` for a list of verified zaps targeting an event, or `useVerifiedOnchainZap(event)` for a single event:
 
 ```tsx
-import { useOnchainZaps } from '@/hooks/useOnchainZaps';
+import { useOnchainZaps } from "@/hooks/useOnchainZaps";
 
 function OnchainZapList({ target }: { target: NostrEvent }) {
   const { zaps, totalSats, isLoading } = useOnchainZaps(target);
   if (isLoading) return <Skeleton className="h-6 w-24" />;
-  return <div>{totalSats.toLocaleString()} sats from {zaps.length} zappers</div>;
+  return (
+    <div>
+      {totalSats.toLocaleString()} sats from {zaps.length} zappers
+    </div>
+  );
 }
 ```
 
@@ -312,14 +339,14 @@ When showing total zaps for a post, sum verified amounts from **both** kind 9735
 
 All endpoints are public and unauthenticated:
 
-| Endpoint | Used by |
-|---|---|
-| `GET /address/{addr}` | `fetchAddressData` — balance + tx counts |
-| `GET /address/{addr}/txs` | `fetchTransactions` — recent tx history |
-| `GET /address/{addr}/utxo` | `fetchUTXOs` — for building send PSBTs |
-| `GET /tx/{txid}` | `fetchTxDetail` + zap verifier — full inputs/outputs |
-| `GET /fee-estimates` | `getFeeRates` — sat/vB per block target |
-| `POST /tx` | `broadcastTransaction` — body is raw tx hex, returns txid |
+| Endpoint                   | Used by                                                   |
+| -------------------------- | --------------------------------------------------------- |
+| `GET /address/{addr}`      | `fetchAddressData` — balance + tx counts                  |
+| `GET /address/{addr}/txs`  | `fetchTransactions` — recent tx history                   |
+| `GET /address/{addr}/utxo` | `fetchUTXOs` — for building send PSBTs                    |
+| `GET /tx/{txid}`           | `fetchTxDetail` + zap verifier — full inputs/outputs      |
+| `GET /fee-estimates`       | `getFeeRates` — sat/vB per block target                   |
+| `POST /tx`                 | `broadcastTransaction` — body is raw tx hex, returns txid |
 
 You can swap to a self-hosted Esplora instance by changing the `MEMPOOL_API` constant in `src/lib/bitcoin.ts`.
 

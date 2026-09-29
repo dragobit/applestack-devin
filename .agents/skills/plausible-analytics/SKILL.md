@@ -1,11 +1,11 @@
 ---
 name: plausible-analytics
-description: Add Plausible Analytics tracking to the application, configured through AppConfig and environment variables.
+description: Add Plausible Analytics tracking to the application, configured through settings services and environment variables.
 ---
 
 # Plausible Analytics
 
-Add privacy-friendly analytics with [Plausible](https://plausible.io/) using the `@plausible-analytics/tracker` npm package. Configuration lives in `AppConfig` so it can be set via `VITE_` environment variables.
+Add privacy-friendly analytics with [Plausible](https://plausible.io/) using the `@plausible-analytics/tracker` npm package. Configuration lives in `src/services/settings.ts` as persisted RxJS `BehaviorSubject`s, so it can be set via `VITE_` environment variables and read reactively.
 
 ## 1. Install the package
 
@@ -13,103 +13,90 @@ Add privacy-friendly analytics with [Plausible](https://plausible.io/) using the
 npm install @plausible-analytics/tracker
 ```
 
-## 2. Add fields to `AppConfig`
+## 2. Add settings subjects in `src/services/settings.ts`
 
-In `src/contexts/AppContext.ts`, add two fields to the `AppConfig` interface:
+App configuration in this repo is not a React context — each setting is an exported `BehaviorSubject` persisted to `localStorage` with the `persist()` helper. Add two:
 
-```typescript
-export interface AppConfig {
-  // ...existing fields...
-  /** Plausible Analytics domain (empty string = disabled). */
-  plausibleDomain: string;
-  /** Plausible Analytics API endpoint (empty string = use default). */
-  plausibleEndpoint: string;
-}
+```ts
+/** Plausible Analytics domain (empty string = disabled). */
+export const plausibleDomain = new BehaviorSubject<string>(
+  import.meta.env.VITE_PLAUSIBLE_DOMAIN || "",
+);
+
+persist(plausibleDomain, "plausibleDomain", {
+  serialize: (v) => v,
+  deserialize: (v) => v,
+});
+
+/** Plausible Analytics API endpoint (empty string = use default). */
+export const plausibleEndpoint = new BehaviorSubject<string>(
+  import.meta.env.VITE_PLAUSIBLE_ENDPOINT || "",
+);
+
+persist(plausibleEndpoint, "plausibleEndpoint", {
+  serialize: (v) => v,
+  deserialize: (v) => v,
+});
 ```
 
-## 3. Update the Zod schema in `AppProvider.tsx`
+`import.meta.env.VITE_*` provides the build-time default; anything the user writes into localStorage afterward wins (that's how `extraRelays` and `lookupRelays` already behave).
 
-Add the new fields to the `AppConfigSchema`:
-
-```typescript
-const AppConfigSchema = z.object({
-  // ...existing fields...
-  plausibleDomain: z.string(),
-  plausibleEndpoint: z.string(),
-}) satisfies z.ZodType<AppConfig>;
-```
-
-## 4. Create `PlausibleProvider`
+## 3. Create `PlausibleProvider`
 
 Create `src/components/PlausibleProvider.tsx`:
 
 ```tsx
-import { ReactNode, useEffect, useRef } from 'react';
-import { useAppContext } from '@/hooks/useAppContext';
+import { ReactNode, useEffect, useRef } from "react";
+import { use$ } from "@/hooks/use$";
+import { plausibleDomain, plausibleEndpoint } from "@/services/settings";
 
 interface PlausibleProviderProps {
   children: ReactNode;
 }
 
 /**
- * Reactively initializes Plausible Analytics from AppConfig.
+ * Reactively initializes Plausible Analytics from settings.
  * Plausible's `init()` can only be called once, so we guard with a ref.
  */
 export function PlausibleProvider({ children }: PlausibleProviderProps) {
-  const { config } = useAppContext();
+  const domain = use$(plausibleDomain);
+  const endpoint = use$(plausibleEndpoint);
   const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (initializedRef.current || !config.plausibleDomain) return;
+    if (initializedRef.current || !domain) return;
     initializedRef.current = true;
 
-    import('@plausible-analytics/tracker').then(({ init }) => {
-      init({
-        domain: config.plausibleDomain,
-        ...(config.plausibleEndpoint && { endpoint: config.plausibleEndpoint }),
-      });
-    }).catch(console.error);
-  }, [config.plausibleDomain, config.plausibleEndpoint]);
+    import("@plausible-analytics/tracker")
+      .then(({ init }) => {
+        init({
+          domain,
+          ...(endpoint && { endpoint }),
+        });
+      })
+      .catch(console.error);
+  }, [domain, endpoint]);
 
   return <>{children}</>;
 }
 ```
 
-## 5. Wire into `App.tsx`
+`use$` (re-exported from `applesauce-react/hooks`) subscribes to the subject and re-renders on change.
 
-Import `PlausibleProvider` and add it inside `AppProvider` (it needs access to `useAppContext`):
+## 4. Wire into `src/App.tsx`
+
+Import `PlausibleProvider` and render it inside the provider tree — anywhere inside `TooltipProvider` works since it only reads services:
 
 ```tsx
-import { PlausibleProvider } from '@/components/PlausibleProvider';
+import { PlausibleProvider } from "@/components/PlausibleProvider";
 
-// In the defaultConfig, add:
-const defaultConfig: AppConfig = {
-  // ...existing fields...
-  plausibleDomain: import.meta.env.VITE_PLAUSIBLE_DOMAIN || '',
-  plausibleEndpoint: import.meta.env.VITE_PLAUSIBLE_ENDPOINT || '',
-};
-
-// In the JSX, wrap children of AppProvider:
-<AppProvider storageKey="nostr:app-config" defaultConfig={defaultConfig}>
-  <PlausibleProvider>
-    {/* ...rest of providers... */}
-  </PlausibleProvider>
-</AppProvider>
+// In the JSX:
+<TooltipProvider>
+  <PlausibleProvider>{/* ...rest of the tree... */}</PlausibleProvider>
+</TooltipProvider>;
 ```
 
-## 6. Update `TestApp.tsx`
-
-Add the new fields to the test default config with empty strings (disabled):
-
-```typescript
-const defaultConfig: AppConfig = {
-  // ...existing fields...
-  plausibleDomain: '',
-  plausibleEndpoint: '',
-};
-```
-
-## 7. Configure via environment variables
+## 5. Configure via environment variables
 
 Create or update `.env`:
 
@@ -118,4 +105,6 @@ VITE_PLAUSIBLE_DOMAIN="example.com"
 VITE_PLAUSIBLE_ENDPOINT="https://plausible.example.com/api/event"
 ```
 
-`VITE_PLAUSIBLE_ENDPOINT` is optional -- it defaults to Plausible Cloud's endpoint if omitted. Set it when using a self-hosted Plausible instance.
+`VITE_PLAUSIBLE_ENDPOINT` is optional — it defaults to Plausible Cloud's endpoint if omitted. Set it when using a self-hosted Plausible instance.
+
+To let users change the domain at runtime, expose a settings control that calls `plausibleDomain.next(newDomain)` — the subject persists automatically and `PlausibleProvider` reacts.

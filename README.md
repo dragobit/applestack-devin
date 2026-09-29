@@ -1,257 +1,86 @@
-# Applestack
+# applestack-devin
 
-**Production-Ready Nostr Client Framework**
+**A Devin-driven template for Nostr clients** — a fork of [hzrd149/applestack](https://github.com/hzrd149/applestack) hardened for agent-driven development.
 
-Applestack is a modern framework for building Nostr applications with React 18.x, TailwindCSS 3.x, Vite, shadcn/ui, and Applesauce. Build powerful, reactive Nostr applications - from social feeds to private messaging, Applestack provides everything you need to create decentralized apps on the Nostr protocol.
+This is a **template repository**: fork or clone it, then drive changes through Devin sessions and pull requests. `AGENTS.md` is the authoritative guide for commands and app wiring — keep it accurate as the repo evolves.
 
-## 🚀 Quick Start
+## Stack
 
-Get started with Applestack:
+- **React 19** — hooks, concurrent rendering, ref-as-prop
+- **Tailwind CSS v4** — CSS-first config via `@tailwindcss/vite` (no `tailwind.config.ts`); theme tokens in `src/index.css`
+- **Vite** — dev server on port **8080**, production builds to `dist/`
+- **shadcn/ui** — accessible components on Radix UI (`src/components/ui`)
+- **Applesauce v6 + RxJS** — reactive Nostr SDK: `EventStore`, `RelayPool`, models, loaders
+- **nostr-tools** — event signing, verification, NIP-19 codecs
+- **TypeScript** (strict) — `npm run dev` / `npm test` / `npm run build` via npm
 
-### 1. Clone & Install
+## Quick start
 
 ```bash
-git clone https://github.com/yourusername/applestack.git
-cd applestack
+git clone https://github.com/dragobit/applestack-devin.git
+cd applestack-devin
 npm install
+npm run dev        # http://localhost:8080
 ```
-
-### 2. Start Development
 
 ```bash
-npm run dev
-# Visit http://localhost:5173
+npm test           # tsc + eslint + vitest + production build (same as CI)
+npm run build      # vite build -> dist/ (+ copies index.html to 404.html for SPA routing)
+npm run format     # prettier
 ```
 
-### 3. Build for Production
+## Working with Devin
 
-```bash
-npm run build
-npm run preview
-```
+The repo is designed so an agent can navigate it without prior context:
 
-## ✨ What Makes Applestack Special
+- `AGENTS.md` documents commands, provider wiring, lint rules, and deploy setup.
+- `.agents/skills/` contains loadable feature skills (NWC, zaps, onchain Bitcoin, Capacitor, theming, NIP-19 routing, nostr-encryption, and more). Each `SKILL.md` explains what to copy into `src/` and how to wire it.
+- `src/services/` holds global state as persisted RxJS `BehaviorSubject`s — there is no React `AppContext`. Read state in components with `use$` from `src/hooks/use$.ts`.
 
-- **⚡ Reactive Architecture**: Built on Applesauce v6 with RxJS for real-time updates
-- **🎨 Beautiful UI**: 48+ shadcn/ui components with light/dark theme support
-- **🔐 Built-in Security**: NIP-07 browser signing, NIP-44 encryption, event validation
-- **💰 Payments Ready**: Lightning zaps (NIP-57) with built-in wallet support
-- **📱 Production Ready**: TypeScript, testing, and responsive design included
-- **🔄 Smart Caching**: EventStore with efficient event management and loaders
-- **🧩 Type-Safe Casts**: Note, User, Reaction, and Zap casts with computed properties
+## Key structure
 
-## 🛠 Technology Stack
+- `src/App.tsx` — provider wiring only (Unhead, `EventStoreProvider`, `AccountsProvider`, `ActionsProvider`, tooltip, toaster, `ThemeSync`).
+- `src/AppRouter.tsx` — routes; the `/:nip19` catch-all handles NIP-19 identifiers.
+- `src/services/nostr.ts` — global `EventStore` + `RelayPool`, event verification (gift-wrap kinds 1059/21059 get hash-only verification), `publish()`, and loaders (events, addresses, reactions, zaps).
+- `src/services/settings.ts` — persisted settings subjects: `extraRelays`, `lookupRelays`, `theme` (`"light" | "dark" | "system"`), and the `persist()` helper for new settings.
+- `src/services/accounts.ts`, `src/services/actions.ts` — account manager and action runner.
+- `src/hooks/` — `use$` (RxJS subscription), `useAccount`, `useActiveAccount` helpers, `useUser`, `useProfile`, `useTimeline`, `usePublish`, `useToast`, `useIsMobile`, `useLocalStorage`, `useLoginActions`, `useEventStore`, `useAction`.
+- `src/factories/`, `src/operations/` — custom event factories and applesauce factory operations.
+- `src/test/` — `setup.ts` (jsdom mocks + `fake-indexeddb/auto`), `TestApp` wrapper, examples.
 
-- **React 18.x**: Stable version with hooks, concurrent rendering, and improved performance
-- **TailwindCSS 3.x**: Utility-first CSS framework for styling
-- **Vite**: Fast build tool and development server
-- **shadcn/ui**: 48+ unstyled, accessible UI components built with Radix UI
-- **Applesauce v6**: Production-ready Nostr SDK with reactive architecture
-- **RxJS**: Reactive programming with observables for real-time state management
-- **React Router**: Client-side routing with BrowserRouter
-- **TypeScript**: Type-safe JavaScript development
+## Testing
 
-## 🎯 Key Features
+Vitest + Testing Library under jsdom. `src/test/setup.ts` mocks `matchMedia`, `scrollTo`, `IntersectionObserver`, `ResizeObserver`, and provides a fake IndexedDB (required because `src/services/cache.ts` loads `window.nostrdb.js` at module scope). Write tests against the `TestApp` wrapper — see `src/App.test.tsx` and the `testing` skill.
 
-Applestack provides a complete foundation for building Nostr applications with:
+## Lint rules
 
-- **Reactive Data Flow**: RxJS observables for real-time event updates
-- **Smart Event Management**: EventStore with efficient caching and queries
-- **Type-Safe Casts**: Note, User, Reaction, Zap with computed properties
-- **Powerful Models**: ProfileModel, ThreadModel, CommentsModel for complex data
-- **Multi-Relay Support**: RelayPool with automatic connection management
-- **Built-in Loaders**: Infinite scroll, event loading, and pagination support
+ESLint (flat config) plus repo-local rules in `eslint-rules/`: no placeholder comments, no fixme warnings, no unused disable directives, no inline scripts in HTML, no `any`, `cause` required on rethrown errors, and no `setState` in effects.
 
-## 🔧 Core Features
+## Deploy
 
-### Authentication & Users
+Two GitHub workflows ship with the repo; **nsite is the default target**.
 
-- `LoginArea` component with account switching
-- `useAccount` hook for authentication state
-- `useUser` and `useProfile` hooks for user data
-- NIP-07 browser signing support
-- Multi-account management with extension, nsec, and bunker support
+### nsite (NIP-5A) — `deploy-nsite.yml`
 
-### Nostr Protocol Support
+Runs on pushes to `main` and on `workflow_dispatch`. Builds `dist/` and publishes it as an [nsite](https://nsite.lol): files go to Blossom as blobs, then a kind `15128` manifest maps paths to hashes. Live at `https://<site-npub>.nsite.lol` and other public gateways.
 
-- **Social Features**: User profiles (NIP-01), follow lists (NIP-02), reactions (NIP-25)
-- **Messaging**: Private DMs (NIP-04, NIP-17) with encryption (NIP-44)
-- **Payments**: Lightning zaps (NIP-57) with wallet integration
-- **Content**: Long-form articles (NIP-23), calendars (NIP-52), and custom kinds
+Setup:
 
-### Data Management with Applesauce
+1. Generate a dedicated keypair for the site (its npub is the site address).
+2. Add the nsec (or hex key) as the **`NSITE_NSEC`** repository secret (Settings → Secrets and variables → Actions).
+3. Optionally set `NSITE_RELAYS` and `NSITE_BLOSSOM_SERVERS` repository variables to override the default publish relays / upload servers.
 
-- `useTimeline` hook for reactive event feeds
-- `usePublish` hook for event publishing with automatic client tagging
-- `use$` hook for subscribing to RxJS observables
-- `useEventStore` for accessing the global event store
-- Event validation and filtering with type-safe casts
-- Built-in loaders for infinite scroll and pagination
+The deploy step skips itself with a notice when `NSITE_NSEC` is not set. Locally, `npm run deploy` does the same thing and stores a generated keypair in `.env.nostr-deploy.local` (gitignored — never commit it).
 
-### UI Components
+### GitHub Pages — `deploy.yml`
 
-- 48+ shadcn/ui components (buttons, forms, dialogs, etc.)
-- Authentication components (LoginDialog, SignupDialog, AccountSwitcher)
-- NIP-65 relay management with RelayListManager
-- Light/dark theme system with `useTheme` hook
-- Toast notifications with `useToast`
-- Responsive design with `useIsMobile` hook
+Disabled by default so it doesn't race nsite. Enable it either by:
 
-### Advanced Features
+- running the workflow manually from the Actions tab (`workflow_dispatch`), or
+- setting the `DEPLOY_GH_PAGES` repository variable to `true`.
 
-- NIP-19 identifier routing (`npub1`, `note1`, `nevent1`, `naddr1`)
-- Cryptographic operations (NIP-44 encryption/decryption)
-- Lightning payments and zaps
-- Real-time event subscriptions with RxJS
-- ThreadModel and CommentsModel for discussions
-- Responsive design with mobile support
+The build copies `dist/index.html` to `dist/404.html` for SPA fallback routing.
 
-## 📖 Core Hooks
+## License
 
-Applestack provides powerful React hooks built on Applesauce:
-
-### Event Management
-
-- **`use$`**: Subscribe to RxJS observables with automatic cleanup
-- **`useEventStore`**: Access the global EventStore instance
-- **`useTimeline`**: Subscribe to live event timelines from relays
-- **`useLocalTimeline`**: Query events from local EventStore only
-
-### User & Authentication
-
-- **`useAccount`**: Get the currently logged-in account
-- **`useUser`**: Create a User cast with reactive profile and contacts
-- **`useProfile`**: Get user profile metadata (uses User cast internally)
-- **`useMyUser`**: Get current user's User cast
-- **`useLoginActions`**: Access login methods (extension, nsec, bunker)
-
-### Publishing & Actions
-
-- **`usePublish`**: Publish events with automatic signing
-- **`useAction`**: Execute pre-built actions (CreateNote, FollowUser, etc.)
-
-### Utilities
-
-- **`useTheme`**: Theme management (light/dark mode)
-- **`useToast`**: Toast notifications
-- **`useIsMobile`**: Responsive design helper
-- **`useLocalStorage`**: Persistent local storage
-
-## 📁 Project Structure
-
-```
-src/
-├── components/           # UI components
-│   ├── ui/              # shadcn/ui components (48+ available)
-│   └── auth/            # Authentication components (LoginArea, LoginDialog, etc.)
-├── services/            # Applesauce core services
-│   ├── stores.ts        # EventStore instance
-│   ├── pool.ts          # RelayPool instance
-│   ├── accounts.ts      # Account manager
-│   ├── loaders.ts       # Event loaders
-│   └── actions.ts       # Pre-built actions
-├── hooks/               # Custom React hooks
-│   ├── use$             # Subscribe to observables
-│   ├── useEventStore    # Access EventStore
-│   ├── useAccount       # Authentication state
-│   ├── useUser          # User cast
-│   ├── useProfile       # User profile data
-│   ├── useTimeline      # Event timeline
-│   ├── usePublish       # Event publishing
-│   ├── useAction        # Execute actions
-│   └── useTheme         # Theme management
-├── pages/               # Page components
-├── lib/                 # Utility functions
-├── types/               # TypeScript type definitions
-└── test/                # Testing utilities (TestApp)
-```
-
-## 🎨 UI Components
-
-MKStack includes 48+ shadcn/ui components:
-
-**Layout**: Card, Separator, Sheet, Sidebar, ScrollArea, Resizable
-**Navigation**: Breadcrumb, NavigationMenu, Menubar, Tabs, Pagination
-**Forms**: Button, Input, Textarea, Select, Checkbox, RadioGroup, Switch, Slider
-**Feedback**: Alert, AlertDialog, Toast, Progress, Skeleton
-**Overlay**: Dialog, Popover, HoverCard, Tooltip, ContextMenu, DropdownMenu
-**Data Display**: Table, Avatar, Badge, Calendar, Chart, Carousel
-\*\*And many more...
-
-## 🔐 Security & Best Practices
-
-- **Never use `any` type**: Always use proper TypeScript types
-- **Event validation**: Filter events through validator functions for custom kinds
-- **Efficient queries**: Minimize separate queries to avoid rate limiting
-- **Proper error handling**: Graceful handling of invalid NIP-19 identifiers
-- **Secure authentication**: Use signer interface, never request private keys directly
-
-## 📱 Responsive Design
-
-- Mobile-first approach with Tailwind breakpoints
-- `useIsMobile` hook for responsive behavior
-- Touch-friendly interactions
-- Optimized for all screen sizes
-
-## 🧪 Testing
-
-- Vitest with jsdom environment
-- React Testing Library with jest-dom matchers
-- `TestApp` component provides all necessary context providers
-- Mocked browser APIs (matchMedia, scrollTo, IntersectionObserver, ResizeObserver)
-
-## 🏗️ Building & Deployment
-
-Build your Applestack app for production:
-
-```bash
-npm run build        # Build for production
-npm run preview     # Preview production build locally
-```
-
-Deploy to your preferred platform:
-
-- **Vercel**: `vercel deploy`
-- **Netlify**: `netlify deploy --prod`
-- **GitHub Pages**: Configure in your repository settings
-- **Custom Server**: Serve the `dist` folder
-
-## 📚 Documentation
-
-For detailed documentation on building Nostr applications:
-
-- **Project Docs**: See `docs/` directory for implementation guides
-  - `docs/AI_CHAT.md`: Building AI-powered chat interfaces
-  - `docs/NOSTR_COMMENTS.md`: Implementing comment systems
-  - `docs/NOSTR_INFINITE_SCROLL.md`: Feed interfaces with pagination
-  - `docs/NOSTR_DIRECT_MESSAGES.md`: Direct messaging (NIP-04/NIP-17)
-- **Applesauce**: [GitHub Repository](https://github.com/hzrd149/applesauce)
-- **Nostr Protocol**: [nostr.com](https://nostr.com)
-- **shadcn/ui**: [ui.shadcn.com](https://ui.shadcn.com)
-
-## 🤝 Contributing
-
-Applestack is open source and welcomes contributions. The framework is designed to be:
-
-- **Extensible**: Easy to add new NIPs and features with Applesauce
-- **Maintainable**: Clean reactive architecture with TypeScript
-- **Testable**: Comprehensive testing setup with Vitest and Testing Library
-- **Documented**: Clear patterns and implementation guides in `docs/`
-
-To contribute:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes following the project patterns
-4. Ensure tests pass with `npm test`
-5. Submit a pull request
-
-## 📄 License
-
-MIT License - Open source and free to use. Build amazing Nostr applications and help grow the decentralized web!
-
----
-
-**Built with Applestack** - A production-ready Nostr client framework powered by Applesauce v6.
-
-_Reactive, type-safe, and ready for production._
+Same as upstream applestack.

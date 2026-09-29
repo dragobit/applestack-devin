@@ -1,7 +1,18 @@
-import { useState, useEffect, useRef, forwardRef } from 'react';
-import { Zap, Copy, Check, ExternalLink, Sparkle, Sparkles, Star, Rocket, ArrowLeft, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { useState, useEffect, useRef, forwardRef } from "react";
+import {
+  Zap,
+  Copy,
+  Check,
+  ExternalLink,
+  Sparkle,
+  Sparkles,
+  Star,
+  Rocket,
+  ArrowLeft,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
@@ -18,21 +29,21 @@ import {
   DrawerTitle,
   DrawerTrigger,
   DrawerClose,
-} from '@/components/ui/drawer';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { useActiveAccount } from 'applesauce-react/hooks';
-import { useProfile } from '@/hooks/useProfile';
-import { useToast } from '@/hooks/useToast';
-import { useZaps } from '@/hooks/useZaps';
-import { useWallet } from '@/hooks/useWallet';
-import { useIsMobile } from '@/hooks/useIsMobile';
-import type { NostrEvent } from 'nostr-tools';
-import QRCode from 'qrcode';
+} from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useActiveAccount } from "applesauce-react/hooks";
+import { useProfile } from "@/hooks/useProfile";
+import { useToast } from "@/hooks/useToast";
+import { useZaps } from "@/hooks/useZaps";
+import { useWallet } from "@/hooks/useWallet";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import type { NostrEvent } from "nostr-tools";
+import QRCode from "qrcode";
 import type { WebLNProvider } from "@webbtc/webln-types";
 
 interface ZapDialogProps {
@@ -67,173 +78,187 @@ interface ZapContentProps {
 }
 
 // Moved ZapContent outside of ZapDialog to prevent re-renders causing focus loss
-const ZapContent = forwardRef<HTMLDivElement, ZapContentProps>(({
-  invoice,
-  amount,
-  comment,
-  isZapping,
-  qrCodeUrl,
-  copied,
-  webln,
-  handleZap,
-  handleCopy,
-  openInWallet,
-  setAmount,
-  setComment,
-  inputRef,
-  zap,
-}, ref) => (
-  <div ref={ref}>
-    {invoice ? (
-      <div className="flex flex-col h-full min-h-0">
-        {/* Payment amount display */}
-        <div className="text-center pt-4">
-          <div className="text-2xl font-bold">{amount} sats</div>
-        </div>
-
-        <Separator className="my-4" />
-
-        <div className="flex flex-col justify-center min-h-0 flex-1 px-2">
-          {/* QR Code */}
-          <div className="flex justify-center">
-            <Card className="p-3 [@media(max-height:680px)]:max-w-[65vw] max-w-[95vw] mx-auto">
-              <CardContent className="p-0 flex justify-center">
-                {qrCodeUrl ? (
-                  <img
-                    src={qrCodeUrl}
-                    alt="Lightning Invoice QR Code"
-                    className="w-full h-auto aspect-square max-w-full object-contain"
-                  />
-                ) : (
-                  <div className="w-full aspect-square bg-muted animate-pulse rounded" />
-                )}
-              </CardContent>
-            </Card>
+const ZapContent = forwardRef<HTMLDivElement, ZapContentProps>(
+  (
+    {
+      invoice,
+      amount,
+      comment,
+      isZapping,
+      qrCodeUrl,
+      copied,
+      webln,
+      handleZap,
+      handleCopy,
+      openInWallet,
+      setAmount,
+      setComment,
+      inputRef,
+      zap,
+    },
+    ref,
+  ) => (
+    <div ref={ref}>
+      {invoice ? (
+        <div className="flex flex-col h-full min-h-0">
+          {/* Payment amount display */}
+          <div className="text-center pt-4">
+            <div className="text-2xl font-bold">{amount} sats</div>
           </div>
 
-          {/* Invoice input */}
-          <div className="space-y-2 mt-4">
-            <Label htmlFor="invoice">Lightning Invoice</Label>
-            <div className="flex gap-2 min-w-0">
-              <Input
-                id="invoice"
-                value={invoice}
-                readOnly
-                className="font-mono text-base md:text-xs min-w-0 flex-1 overflow-hidden text-ellipsis"
-                onClick={(e) => e.currentTarget.select()}
-              />
+          <Separator className="my-4" />
+
+          <div className="flex flex-col justify-center min-h-0 flex-1 px-2">
+            {/* QR Code */}
+            <div className="flex justify-center">
+              <Card className="p-3 [@media(max-height:680px)]:max-w-[65vw] max-w-[95vw] mx-auto">
+                <CardContent className="p-0 flex justify-center">
+                  {qrCodeUrl ? (
+                    <img
+                      src={qrCodeUrl}
+                      alt="Lightning Invoice QR Code"
+                      className="w-full h-auto aspect-square max-w-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-full aspect-square bg-muted animate-pulse rounded" />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Invoice input */}
+            <div className="space-y-2 mt-4">
+              <Label htmlFor="invoice">Lightning Invoice</Label>
+              <div className="flex gap-2 min-w-0">
+                <Input
+                  id="invoice"
+                  value={invoice}
+                  readOnly
+                  className="font-mono text-base md:text-xs min-w-0 flex-1 overflow-hidden text-ellipsis"
+                  onClick={(e) => e.currentTarget.select()}
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopy}
+                  className="shrink-0"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Payment buttons */}
+            <div className="space-y-3 mt-4">
+              {webln && (
+                <Button
+                  onClick={() => {
+                    const finalAmount =
+                      typeof amount === "string"
+                        ? parseInt(amount, 10)
+                        : amount;
+                    zap(finalAmount, comment);
+                  }}
+                  disabled={isZapping}
+                  className="w-full"
+                  size="lg"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  {isZapping ? "Processing..." : "Pay with WebLN"}
+                </Button>
+              )}
+
               <Button
                 variant="outline"
-                size="icon"
-                onClick={handleCopy}
-                className="shrink-0"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4 text-green-600" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Payment buttons */}
-          <div className="space-y-3 mt-4">
-            {webln && (
-              <Button
-                onClick={() => {
-                  const finalAmount = typeof amount === 'string' ? parseInt(amount, 10) : amount;
-                  zap(finalAmount, comment);
-                }}
-                disabled={isZapping}
+                onClick={openInWallet}
                 className="w-full"
                 size="lg"
               >
-                <Zap className="h-4 w-4 mr-2" />
-                {isZapping ? "Processing..." : "Pay with WebLN"}
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open in Lightning Wallet
               </Button>
-            )}
 
-            <Button
-              variant="outline"
-              onClick={openInWallet}
-              className="w-full"
-              size="lg"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Open in Lightning Wallet
-            </Button>
-
-            <div className="text-xs sm:text-[.65rem] text-muted-foreground text-center">
-              Scan the QR code or copy the invoice to pay with any Lightning wallet.
+              <div className="text-xs sm:text-[.65rem] text-muted-foreground text-center">
+                Scan the QR code or copy the invoice to pay with any Lightning
+                wallet.
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    ) : (
-      <>
-        <div className="grid gap-3 px-4 py-4 w-full overflow-hidden">
-          <ToggleGroup
-            type="single"
-            value={String(amount)}
-            onValueChange={(value) => {
-              if (value) {
-                setAmount(parseInt(value, 10));
-              }
-            }}
-            className="grid grid-cols-5 gap-1 w-full"
-          >
-            {presetAmounts.map(({ amount: presetAmount, icon: Icon }) => (
-              <ToggleGroupItem
-                key={presetAmount}
-                value={String(presetAmount)}
-                className="flex flex-col h-auto min-w-0 text-xs px-1 py-2"
-              >
-                <Icon className="h-4 w-4 mb-1" />
-                <span className="truncate">{presetAmount}</span>
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-          <div className="flex items-center gap-2">
-            <div className="h-px flex-1 bg-muted" />
-            <span className="text-xs text-muted-foreground">OR</span>
-            <div className="h-px flex-1 bg-muted" />
+      ) : (
+        <>
+          <div className="grid gap-3 px-4 py-4 w-full overflow-hidden">
+            <ToggleGroup
+              type="single"
+              value={String(amount)}
+              onValueChange={(value) => {
+                if (value) {
+                  setAmount(parseInt(value, 10));
+                }
+              }}
+              className="grid grid-cols-5 gap-1 w-full"
+            >
+              {presetAmounts.map(({ amount: presetAmount, icon: Icon }) => (
+                <ToggleGroupItem
+                  key={presetAmount}
+                  value={String(presetAmount)}
+                  className="flex flex-col h-auto min-w-0 text-xs px-1 py-2"
+                >
+                  <Icon className="h-4 w-4 mb-1" />
+                  <span className="truncate">{presetAmount}</span>
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+            <div className="flex items-center gap-2">
+              <div className="h-px flex-1 bg-muted" />
+              <span className="text-xs text-muted-foreground">OR</span>
+              <div className="h-px flex-1 bg-muted" />
+            </div>
+            <Input
+              ref={inputRef}
+              id="custom-amount"
+              type="number"
+              placeholder="Custom amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full"
+            />
+            <Textarea
+              id="custom-comment"
+              placeholder="Add a comment (optional)"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              className="w-full resize-none"
+              rows={2}
+            />
           </div>
-          <Input
-            ref={inputRef}
-            id="custom-amount"
-            type="number"
-            placeholder="Custom amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-full"
-          />
-          <Textarea
-            id="custom-comment"
-            placeholder="Add a comment (optional)"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            className="w-full resize-none"
-            rows={2}
-          />
-        </div>
-        <div className="px-4 pb-4">
-          <Button onClick={handleZap} className="w-full" disabled={isZapping} size="default">
-            {isZapping ? (
-              'Creating invoice...'
-            ) : (
-              <>
-                <Zap className="h-4 w-4 mr-2" />
-                Zap {amount} sats
-              </>
-            )}
-          </Button>
-        </div>
-      </>
-    )}
-  </div>
-));
-ZapContent.displayName = 'ZapContent';
+          <div className="px-4 pb-4">
+            <Button
+              onClick={handleZap}
+              className="w-full"
+              disabled={isZapping}
+              size="default"
+            >
+              {isZapping ? (
+                "Creating invoice..."
+              ) : (
+                <>
+                  <Zap className="h-4 w-4 mr-2" />
+                  Zap {amount} sats
+                </>
+              )}
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  ),
+);
+ZapContent.displayName = "ZapContent";
 
 export function ZapDialog({ target, children, className }: ZapDialogProps) {
   const [open, setOpen] = useState(false);
@@ -241,18 +266,23 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
   const profile = useProfile(target.pubkey);
   const { toast } = useToast();
   const { webln, activeNWC } = useWallet();
-  const { zap, isZapping, invoice, setInvoice } = useZaps(target, webln, activeNWC, () => setOpen(false));
+  const { zap, isZapping, invoice, setInvoice } = useZaps(
+    target,
+    webln,
+    activeNWC,
+    () => setOpen(false),
+  );
   const [amount, setAmount] = useState<number | string>(100);
-  const [comment, setComment] = useState<string>('');
+  const [comment, setComment] = useState<string>("");
   const [copied, setCopied] = useState(false);
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     if (target) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setComment('Zapped with MKStack!');
+      setComment("Zapped with MKStack!");
     }
   }, [target]);
 
@@ -262,7 +292,7 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
 
     const generateQR = async () => {
       if (!invoice) {
-        setQrCodeUrl('');
+        setQrCodeUrl("");
         return;
       }
 
@@ -271,8 +301,8 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
           width: 512,
           margin: 2,
           color: {
-            dark: '#000000',
-            light: '#FFFFFF',
+            dark: "#000000",
+            light: "#FFFFFF",
           },
         });
 
@@ -281,7 +311,7 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
         }
       } catch (err) {
         if (!isCancelled) {
-          console.error('Failed to generate QR code:', err);
+          console.error("Failed to generate QR code:", err);
         }
       }
     };
@@ -298,8 +328,8 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
       await navigator.clipboard.writeText(invoice);
       setCopied(true);
       toast({
-        title: 'Invoice copied',
-        description: 'Lightning invoice copied to clipboard',
+        title: "Invoice copied",
+        description: "Lightning invoice copied to clipboard",
       });
       setTimeout(() => setCopied(false), 2000);
     }
@@ -308,7 +338,7 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
   const openInWallet = () => {
     if (invoice) {
       const lightningUrl = `lightning:${invoice}`;
-      window.open(lightningUrl, '_blank');
+      window.open(lightningUrl, "_blank");
     }
   };
 
@@ -321,19 +351,20 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
       setAmount(100);
       setInvoice(null);
       setCopied(false);
-      setQrCodeUrl('');
+      setQrCodeUrl("");
     } else {
       // Clean up state when dialog closes
       setAmount(100);
       setInvoice(null);
       setCopied(false);
-      setQrCodeUrl('');
+      setQrCodeUrl("");
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [open, setInvoice]);
 
   const handleZap = () => {
-    const finalAmount = typeof amount === 'string' ? parseInt(amount, 10) : amount;
+    const finalAmount =
+      typeof amount === "string" ? parseInt(amount, 10) : amount;
     zap(finalAmount, comment);
   };
 
@@ -354,7 +385,11 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
     zap,
   };
 
-  if (!account || account.pubkey === target.pubkey || (!profile?.lud06 && !profile?.lud16)) {
+  if (
+    !account ||
+    account.pubkey === target.pubkey ||
+    (!profile?.lud06 && !profile?.lud16)
+  ) {
     return null;
   }
 
@@ -367,7 +402,7 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
           // Reset invoice when closing
           if (!newOpen) {
             setInvoice(null);
-            setQrCodeUrl('');
+            setQrCodeUrl("");
           }
           setOpen(newOpen);
         }}
@@ -379,15 +414,13 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
         fadeFromIndex={0}
       >
         <DrawerTrigger asChild>
-          <div className={`cursor-pointer ${className || ''}`}>
-            {children}
-          </div>
+          <div className={`cursor-pointer ${className || ""}`}>{children}</div>
         </DrawerTrigger>
         <DrawerContent
-          key={invoice ? 'payment' : 'form'}
+          key={invoice ? "payment" : "form"}
           className={cn(
             "transition-all duration-300",
-            invoice ? "h-full max-h-screen" : "max-h-[98vh]"
+            invoice ? "h-full max-h-screen" : "max-h-[98vh]",
           )}
           data-testid="zap-modal"
         >
@@ -399,7 +432,7 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
                 size="sm"
                 onClick={() => {
                   setInvoice(null);
-                  setQrCodeUrl('');
+                  setQrCodeUrl("");
                 }}
                 className="absolute left-4 top-4 flex items-center gap-2"
               >
@@ -420,14 +453,12 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
             </DrawerClose>
 
             <DrawerTitle className="text-lg wrap-break-word pt-2">
-              {invoice ? 'Lightning Payment' : 'Send a Zap'}
+              {invoice ? "Lightning Payment" : "Send a Zap"}
             </DrawerTitle>
             <DrawerDescription className="text-sm wrap-break-word text-center">
-              {invoice ? (
-                'Pay with Bitcoin Lightning Network'
-              ) : (
-                'Zaps are small Bitcoin payments that support the creator of this item. If you enjoyed this, consider sending a zap!'
-              )}
+              {invoice
+                ? "Pay with Bitcoin Lightning Network"
+                : "Zaps are small Bitcoin payments that support the creator of this item. If you enjoyed this, consider sending a zap!"}
             </DrawerDescription>
           </DrawerHeader>
           <div className="flex-1 overflow-y-auto px-4 pb-4">
@@ -441,21 +472,23 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <div className={`cursor-pointer ${className || ''}`}>
-          {children}
-        </div>
+        <div className={`cursor-pointer ${className || ""}`}>{children}</div>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] max-h-[95vh] overflow-hidden" data-testid="zap-modal">
+      <DialogContent
+        className="sm:max-w-[425px] max-h-[95vh] overflow-hidden"
+        data-testid="zap-modal"
+      >
         <DialogHeader>
           <DialogTitle className="text-lg wrap-break-word">
-            {invoice ? 'Lightning Payment' : 'Send a Zap'}
+            {invoice ? "Lightning Payment" : "Send a Zap"}
           </DialogTitle>
           <DialogDescription className="text-sm text-center wrap-break-word">
             {invoice ? (
-              'Pay with Bitcoin Lightning Network'
+              "Pay with Bitcoin Lightning Network"
             ) : (
               <>
-                Zaps are small Bitcoin payments that support the creator of this item. If you enjoyed this, consider sending a zap!
+                Zaps are small Bitcoin payments that support the creator of this
+                item. If you enjoyed this, consider sending a zap!
               </>
             )}
           </DialogDescription>
